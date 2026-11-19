@@ -12,7 +12,7 @@ Fun-Hora is a browser-based Jyotish chart workbench with Thai round and square c
 
 ## Special Lagnas
 
-The **Special Lagnas** section shows Hora Lagna (HL) and Ghati Lagna (GL). Both start at the sidereal Sun's longitude at the most recent sunrise, using the selected ayanamsa. HL advances one sign per 60 minutes and GL advances one sign per 24 minutes. A pre-sunrise birth uses the previous sunrise. Fun-Hora uses XALEN's standard apparent sunrise at sea level and reports when no sunrise is available in the search window. [Brihat Parashara Hora Shastra, chapter 5](https://www.siva.sh/brihat-parashara-hora-shastra/5/1-10)
+The **Special Lagnas** section shows Hora Lagna (HL) and Ghati Lagna (GL). Both start at the sidereal Sun's longitude at the most recent sunrise, using the selected ayanamsa. HL advances one sign per 60 minutes and GL advances one sign per 24 minutes. A pre-sunrise birth uses the previous sunrise. Fun-Hora uses XALEN's standard apparent sunrise at sea level and reports when no sunrise is available in the search window. [Hora Lagna verses](https://www.siva.sh/brihat-parashara-hora-shastra/5/1-5) · [Ghati Lagna verses](https://www.siva.sh/brihat-parashara-hora-shastra/5/6-10)
 
 ## How Fun-Hora uses XALEN
 
