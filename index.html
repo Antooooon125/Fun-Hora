@@ -393,11 +393,14 @@
   </div>
   <div class="toolbar">
     <select id="ayanamshaSelect">
-      <option value="lahiri" selected>Ayanamsha: Lahiri (Chitrapaksha)</option>
-      <option value="suriyayart">Ayanamsha: Thai Suriyayart (สุริยยาตร์)</option>
+      <option value="lahiri" selected>Ayanamsha: XALEN Lahiri</option>
+      <option value="suriyayart">Ayanamsha: Fun-Hora Suriyayart (สุริยยาตร์)</option>
       <option value="kp">Ayanamsha: Krishnamurti (KP)</option>
       <option value="raman">Ayanamsha: B.V. Raman</option>
     </select>
+    <button type="button" id="suriyayartToggle" title="Recalculate from the birth details using the other ayanamsa">
+      Switch to Fun-Hora Suriyayart
+    </button>
     <select id="nodeModeSelect">
       <option value="true" selected>Nodes: True Rahu / Vedic Ketu</option>
       <option value="mean">Nodes: Mean Rahu / Vedic Ketu</option>
@@ -754,6 +757,16 @@
     karakaMode: "karakaModeSelect"
   };
   let occurrenceKey = "";
+  const ayanamsaSelect = document.getElementById("ayanamshaSelect");
+  const suriyayartToggle = document.getElementById("suriyayartToggle");
+
+  function updateSuriyayartToggle() {
+    const mode = ayanamsaSelect.value;
+    suriyayartToggle.hidden = mode !== "lahiri" && mode !== "suriyayart";
+    suriyayartToggle.textContent = mode === "suriyayart"
+      ? "Switch to XALEN Lahiri"
+      : "Switch to Fun-Hora Suriyayart";
+  }
 
   function readSettings() {
     return Object.fromEntries(Object.entries(settingControls).map(([key, id]) =>
@@ -2032,6 +2045,7 @@
     document.getElementById("chartSettings").hidden = false;
     document.getElementById("emptyStateBanner").style.display = "none";
     document.getElementById("workspaceContainer").style.display = "block";
+    updateSuriyayartToggle();
     engineStatus.textContent = "Saved chart opened.";
     renderEditor();
     recalculateAll();
@@ -2040,11 +2054,24 @@
   // Initialize empty state
   buildVargaButtons();
   initializeEphemeris();
-  for (const id of ["ayanamshaSelect", "nodeModeSelect"]) {
-    document.getElementById(id).addEventListener("change", () => {
-      if (state) window.calculateFromBirthInput();
-    });
-  }
+  suriyayartToggle.addEventListener("click", () => {
+    const previousMode = ayanamsaSelect.value;
+    ayanamsaSelect.value = previousMode === "suriyayart" ? "lahiri" : "suriyayart";
+    if (state) {
+      const previousChart = state;
+      window.calculateFromBirthInput();
+      if (state === previousChart) ayanamsaSelect.value = previousMode;
+    }
+    updateSuriyayartToggle();
+  });
+  ayanamsaSelect.addEventListener("change", () => {
+    updateSuriyayartToggle();
+    if (state) window.calculateFromBirthInput();
+  });
+  document.getElementById("nodeModeSelect").addEventListener("change", () => {
+    if (state) window.calculateFromBirthInput();
+  });
+  updateSuriyayartToggle();
 </script>
 <footer style="padding: 16px; color: var(--text-secondary);">
   <section id="how-fun-hora-works" aria-labelledby="how-fun-hora-title">
@@ -2057,6 +2084,7 @@
       <li><strong>Thai chart rules</strong> Fun-Hora draws the round and square Thai charts and displays Taksa roles and วิษะ markers.</li>
     </ul>
     <h3>What the Thai Suriyayart setting changes</h3>
+    <p>Use the switch beside the ayanamsa menu to compare XALEN Lahiri with Fun-Hora Suriyayart. When a chart is open, the switch recalculates it from the entered birth details.</p>
     <p>An ayanamsa is the angle subtracted from a tropical longitude to get a sidereal longitude. Fun-Hora’s Thai Suriyayart setting reduces XALEN’s Lahiri ayanamsa for the birth date by 0.592° (about 35′31″). For example, if Lahiri is 24.000°, Fun-Hora uses 23.408°. Subtracting a smaller angle moves the sidereal positions forward by 0.592° compared with Lahiri. A placement close to a sign, varga, or nakshatra boundary can therefore change.</p>
     <p>This fixed offset is Fun-Hora’s convention. Its agreement with a traditional Suriyayart reference has yet to be independently verified.</p>
   </section>

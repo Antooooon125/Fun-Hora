@@ -21,6 +21,8 @@ Fun-Hora is the Jyotish chart app. XALEN Ephemeris is the reusable calculation l
 
 ### What the Thai Suriyayart setting changes
 
+Use the switch beside the ayanamsa menu to compare XALEN Lahiri with Fun-Hora Suriyayart. The switch recalculates an open chart from the entered birth details.
+
 An ayanamsa is the angle subtracted from a tropical longitude to get a sidereal longitude. Fun-Hora’s Thai Suriyayart setting reduces XALEN’s Lahiri ayanamsa for the birth date by 0.592° (about 35′31″). For example, if Lahiri is 24.000°, Fun-Hora uses 23.408°. Subtracting a smaller angle moves the sidereal positions forward by 0.592° compared with Lahiri. A placement close to a sign, varga, or nakshatra boundary can therefore change.
 
 This fixed offset is Fun-Hora’s convention. Its agreement with a traditional Suriyayart reference has yet to be independently verified.
