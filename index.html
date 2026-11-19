@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fun-Hora • Jyotish 20-Varga, Jaimini & Vimshottari Engine v4.1</title>
+  <title>Fun-Hora | Jyotish Chart Workbench</title>
+  <meta name="description" content="Calculate and explore Thai-style Jyotish charts with 20 vargas, Jaimini, and Vimshottari in Fun-Hora.">
   <style>
     :root {
       --bg-primary: #14171a;
@@ -381,8 +382,13 @@
 
 <header>
   <div>
-    <h1>FUN-HORA • JYOTISH 20-VARGA, JAIMINI &amp; VIMSHOTTARI <span style="font-size:0.75rem; color:var(--accent-gold);">v4.1</span></h1>
+    <h1>Fun-Hora <span style="font-size:0.75rem; color:var(--accent-gold);">v4.2</span></h1>
+    <p>Jyotish charts · 20 vargas · Jaimini · Vimshottari</p>
     <p id="chartSubtitle">No birth data loaded — Enter Date, Time &amp; Location below to calculate</p>
+    <details id="chartSettings" hidden>
+      <summary>Chart settings</summary>
+      <p id="chartSettingsText"></p>
+    </details>
   </div>
   <div class="toolbar">
     <select id="ayanamshaSelect">
@@ -419,7 +425,7 @@
 <div class="birth-panel">
   <h2>
     <span>1. Birth Data &amp; Geographic Coordinates (วัน เดือน ปี เวลา และสถานที่เกิด)</span>
-    <span id="calcStatusText" role="status" class="mono" style="font-size:0.78rem; color:var(--text-secondary);">Loading XALEN Ephemeris…</span>
+    <span id="calcStatusText" role="status" class="mono" style="font-size:0.78rem; color:var(--text-secondary);">Loading chart engine…</span>
   </h2>
   <div class="birth-grid">
     <div class="field-group">
@@ -435,8 +441,20 @@
       <input type="time" id="inTime" step="60" />
     </div>
     <div class="field-group">
-      <label for="inTz">UTC offset at birth (hours)</label>
+      <label for="inZone">Birth time zone (IANA)</label>
+      <input id="inZone" type="text" list="timeZones" placeholder="e.g. Asia/Bangkok" autocomplete="off">
+      <datalist id="timeZones">
+        <option value="Asia/Bangkok"></option><option value="Asia/Seoul"></option>
+        <option value="Asia/Kolkata"></option><option value="Asia/Singapore"></option>
+        <option value="Europe/London"></option><option value="America/New_York"></option>
+        <option value="America/Los_Angeles"></option><option value="UTC"></option>
+      </datalist>
+      <label for="inTz">Manual UTC offset (hours, when zone is blank)</label>
       <input id="inTz" type="number" min="-14" max="14" step="any" value="7" required title="Include daylight saving if it applied. For UTC+05:30, use 5.5.">
+      <div id="birthOccurrenceField" hidden>
+        <label for="birthOccurrence">This time occurred twice. Choose the offset.</label>
+        <select id="birthOccurrence"></select>
+      </div>
     </div>
     <div class="field-group">
       <label>Quick City or Search Location</label>
@@ -449,14 +467,14 @@
       <label>Quick Thai / Regional Presets</label>
       <select id="cityQuickSelect" onchange="applyQuickCity(this.value)">
         <option value="">-- Select City --</option>
-        <option value="13.7563,100.5018,7,Bangkok">Bangkok (13.76°N, 100.50°E)</option>
-        <option value="19.9105,99.8406,7,Mueang Chiang Rai">Chiang Rai (19.91°N, 99.84°E)</option>
-        <option value="18.7883,98.9853,7,Chiang Mai">Chiang Mai (18.79°N, 98.99°E)</option>
-        <option value="12.6814,101.2816,7,Rayong">Rayong (12.68°N, 101.28°E)</option>
-        <option value="16.4322,102.8236,7,Khon Kaen">Khon Kaen (16.43°N, 102.82°E)</option>
-        <option value="7.8804,98.3923,7,Phuket">Phuket (7.88°N, 98.39°E)</option>
-        <option value="35.1796,129.0756,9,Busan">Busan, South Korea (35.18°N, 129.08°E)</option>
-        <option value="28.6139,77.2090,5.5,New Delhi">New Delhi, India (28.61°N, 77.21°E)</option>
+        <option value="13.7563,100.5018,Asia/Bangkok,Bangkok">Bangkok (13.76°N, 100.50°E)</option>
+        <option value="19.9105,99.8406,Asia/Bangkok,Mueang Chiang Rai">Chiang Rai (19.91°N, 99.84°E)</option>
+        <option value="18.7883,98.9853,Asia/Bangkok,Chiang Mai">Chiang Mai (18.79°N, 98.99°E)</option>
+        <option value="12.6814,101.2816,Asia/Bangkok,Rayong">Rayong (12.68°N, 101.28°E)</option>
+        <option value="16.4322,102.8236,Asia/Bangkok,Khon Kaen">Khon Kaen (16.43°N, 102.82°E)</option>
+        <option value="7.8804,98.3923,Asia/Bangkok,Phuket">Phuket (7.88°N, 98.39°E)</option>
+        <option value="35.1796,129.0756,Asia/Seoul,Busan">Busan, South Korea (35.18°N, 129.08°E)</option>
+        <option value="28.6139,77.2090,Asia/Kolkata,New Delhi">New Delhi, India (28.61°N, 77.21°E)</option>
       </select>
     </div>
     <div class="field-group">
@@ -725,6 +743,35 @@
 </div>
 
 <script type="module">
+  import { APP_VERSION, ENGINE_VERSION, longitudeParts, resolveBirthTime, validateChart } from "./chart-data.mjs";
+
+  const settingControls = {
+    ayanMode: "ayanamshaSelect",
+    nodeMode: "nodeModeSelect",
+    chartStyle: "chartStyleSelect",
+    d2Mode: "d2ModeSelect",
+    karakaMode: "karakaModeSelect"
+  };
+  let occurrenceKey = "";
+
+  function readSettings() {
+    return Object.fromEntries(Object.entries(settingControls).map(([key, id]) =>
+      [key, document.getElementById(id).value]));
+  }
+
+  function renderChartSettings() {
+    const details = document.getElementById("chartSettingsText");
+    if (!state?.settings) {
+      details.textContent = state ? "This chart predates saved calculation settings." : "";
+      return;
+    }
+    const {utc, timeZone, ayanMode, ayan, nodeMode, d2Mode, karakaMode, engineVersion, appVersion} = state.settings;
+    const offsetLabel = "UTC" + (state.tz >= 0 ? "+" : "") + Number(state.tz.toFixed(5));
+    details.textContent = [utc, timeZone || "Manual offset", offsetLabel,
+      ayanMode.toUpperCase() + " " + ayan.toFixed(4) + "°",
+      (nodeMode === "true" ? "True" : "Mean") + " Rahu", "D2 " + d2Mode,
+      karakaMode + " karakas", "Fun-Hora " + appVersion, "XALEN " + engineVersion].join(" · ");
+  }
   let calculateEphemeris;
   const engineStatus = document.getElementById("calcStatusText");
 
@@ -733,10 +780,10 @@
       const { loadEphemeris } = await import("./ephemeris.mjs");
       calculateEphemeris = await loadEphemeris();
       document.getElementById("calculateButton").disabled = false;
-      engineStatus.textContent = "Ready • XALEN Ephemeris (WebAssembly)";
+      engineStatus.textContent = "Ready to calculate";
     } catch (error) {
       console.error(error);
-      engineStatus.textContent = "XALEN Ephemeris could not load. Reload the page to try again.";
+      engineStatus.textContent = "The chart engine could not load. Reload Fun-Hora to try again.";
     }
   }
   // =========================================================================
@@ -839,10 +886,10 @@
 
   window.applyQuickCity = function(val) {
     if (!val) return;
-    const [lat, lon, tz, name] = val.split(",");
+    const [lat, lon, zone, name] = val.split(",");
     document.getElementById("inLat").value = lat;
     document.getElementById("inLon").value = lon;
-    document.getElementById("inTz").value = tz;
+    document.getElementById("inZone").value = zone;
     document.getElementById("inLocation").value = name;
   };
 
@@ -871,6 +918,10 @@
 
   window.resetAllEmpty = function() {
     state = null;
+    document.getElementById("inZone").value = "";
+    document.getElementById("birthOccurrenceField").hidden = true;
+    document.getElementById("chartSettings").hidden = true;
+    occurrenceKey = "";
     selectedMahaIdx = null;
     selectedVimMahaIdx = null;
     document.getElementById("inName").value = "";
@@ -881,7 +932,7 @@
     document.getElementById("inLon").value = "";
     document.getElementById("cityQuickSelect").value = "";
     document.getElementById("chartSubtitle").textContent = "No birth data loaded — Enter Date, Time & Location below to calculate";
-    if (calculateEphemeris) engineStatus.textContent = "Ready • XALEN Ephemeris (WebAssembly)";
+    if (calculateEphemeris) engineStatus.textContent = "Ready to calculate";
     document.getElementById("emptyStateBanner").style.display = "block";
     document.getElementById("workspaceContainer").style.display = "none";
   };
@@ -914,24 +965,60 @@
     const timeVal = document.getElementById("inTime").value;
     const latVal = parseFloat(document.getElementById("inLat").value);
     const lonVal = parseFloat(document.getElementById("inLon").value);
-    const tzVal = parseFloat(document.getElementById("inTz").value);
+    const zone = document.getElementById("inZone").value.trim();
+    const manualOffset = Number.parseFloat(document.getElementById("inTz").value);
     const locName = document.getElementById("inLocation").value.trim() || `${latVal.toFixed(2)}°, ${lonVal.toFixed(2)}°`;
     const personName = document.getElementById("inName").value.trim();
 
-    if (!dateVal || !timeVal || !Number.isFinite(tzVal) || Math.abs(tzVal) > 14 ||
+    if (!dateVal || !timeVal ||
         !Number.isFinite(latVal) || Math.abs(latVal) > 90 ||
         !Number.isFinite(lonVal) || Math.abs(lonVal) > 180) {
       alert("Enter a birth date, time, UTC offset, and valid coordinates.");
       return;
     }
 
-    const [Y, M, D] = dateVal.split("-").map(Number);
-    const [hh, mm] = timeVal.split(":").map(Number);
-    const localHours = hh + mm / 60.0;
-    const utHours = localHours - tzVal;
-
-    const ayanMode = document.getElementById("ayanamshaSelect").value;
-    const nodeMode = document.getElementById("nodeModeSelect").value;
+    let birthTimes;
+    try {
+      birthTimes = resolveBirthTime(dateVal, timeVal, zone, manualOffset);
+    } catch (error) {
+      engineStatus.textContent = error.message;
+      return;
+    }
+    const occurrenceField = document.getElementById("birthOccurrenceField");
+    const occurrence = document.getElementById("birthOccurrence");
+    occurrenceField.hidden = birthTimes.length !== 2;
+    if (!birthTimes.length) {
+      engineStatus.textContent = "This local time did not occur in the selected zone. Check the birth time or enter a manual offset.";
+      return;
+    }
+    if (birthTimes.length === 2) {
+      const key = dateVal + timeVal + zone;
+      if (occurrenceKey !== key) {
+        occurrenceKey = key;
+        occurrence.replaceChildren(new Option("Select an occurrence", ""));
+        for (const {offset, utc} of birthTimes) {
+          occurrence.add(new Option("UTC" + (offset >= 0 ? "+" : "") + offset + " (" + utc.slice(11, 16) + " UTC)", utc));
+        }
+        if (state?.birthDate === dateVal && state.birthTime === timeVal && state.settings?.timeZone === zone &&
+            birthTimes.some(candidate => candidate.utc === state.settings.utc)) {
+          occurrence.value = state.settings.utc;
+        }
+      }
+      if (!occurrence.value) {
+        engineStatus.textContent = "Choose which occurrence of the birth time to use, then calculate again.";
+        return;
+      }
+    }
+    const {offset: tzVal, utc} = birthTimes.length === 1 ? birthTimes[0] :
+      birthTimes.find(candidate => candidate.utc === occurrence.value);
+    document.getElementById("inTz").value = tzVal;
+    const utcDate = new Date(utc);
+    const Y = utcDate.getUTCFullYear();
+    const M = utcDate.getUTCMonth() + 1;
+    const D = utcDate.getUTCDate();
+    const utHours = utcDate.getUTCHours() + utcDate.getUTCMinutes() / 60 + utcDate.getUTCSeconds() / 3600 + utcDate.getUTCMilliseconds() / 3600000;
+    const settings = readSettings();
+    const {ayanMode, nodeMode} = settings;
 
     const meanSpeeds = {
       Mars: 0.524,
@@ -969,14 +1056,7 @@
 
     const bodies = bodyMeta.map(bm => {
       const lon = siderealMap[bm.key];
-      const sign = Math.floor(lon / 30);
-      const rem = lon - sign * 30;
-      let deg = Math.floor(rem);
-      let min = Math.round((rem - deg) * 60);
-      if (min === 60) { min = 0; deg += 1; }
-      const finalSign = deg === 30 ? mod12(sign + 1) : sign;
-      const finalDeg = deg === 30 ? 0 : deg;
-      const degFloat = finalDeg + min / 60.0;
+      const {sign, deg, min, degreesInSign} = longitudeParts(lon);
 
       let motion = "";
       if (meanSpeeds[bm.key]) {
@@ -990,13 +1070,13 @@
 
       const nakIdx = Math.floor(lon / (360 / 27));
       const rishka = THAI_RISHKA[nakIdx % 9];
-      const visha = getThaiVishaStatus(finalSign, degFloat);
+      const visha = getThaiVishaStatus(sign, degreesInSign);
       const note = `${rishka} (${NAKSHATRAS[nakIdx]})${visha ? ' • ' + visha : ''}`;
 
-      return { key: bm.key, label: bm.label, thNum: bm.thNum, sign: finalSign, deg: finalDeg, min, motion, note };
+      return { key: bm.key, label: bm.label, thNum: bm.thNum, sign, deg, min, longitude: lon, motion, note };
     });
 
-    const weekday = new Date(Y, M - 1, D).getDay();
+    const weekday = new Date(dateVal + "T00:00:00Z").getUTCDay();
     const lagnaSign = bodies[0].sign;
     const titlePrefix = personName ? `${personName} • ` : "";
     const subtitle = `${titlePrefix}${dateVal} ${timeVal} (UTC${tzVal >= 0 ? '+' + tzVal : tzVal}) • ${locName} • ลัคนา${SIGNS[lagnaSign].th} ${String(bodies[0].deg).padStart(2,'0')}°${String(bodies[0].min).padStart(2,'0')}'`;
@@ -1011,14 +1091,16 @@
       lat: latVal,
       lon: lonVal,
       weekday,
+      schemaVersion: 2,
+      settings: { ...settings, ayan, utc, timeZone: zone, appVersion: APP_VERSION, engineVersion: ENGINE_VERSION },
       bodies
     };
 
     selectedMahaIdx = null;
     selectedVimMahaIdx = null;
     document.getElementById("chartSubtitle").textContent = state.subtitle;
-    document.getElementById("calcStatusText").textContent =
-      `Engine: XALEN Ephemeris (WebAssembly) • Ayanamsha: ${ayan.toFixed(4)}° (${ayanMode.toUpperCase()}) • ${nodeMode === 'true' ? 'True' : 'Mean'} Nodes`;
+    engineStatus.textContent = "Chart calculated.";
+    document.getElementById("chartSettings").hidden = false;
     document.getElementById("emptyStateBanner").style.display = "none";
     document.getElementById("workspaceContainer").style.display = "block";
 
@@ -1042,7 +1124,7 @@
   }
 
   function calcVargaSign(vargaId, signIdx, degFloat) {
-    const safeDeg = clamp(degFloat, 0, 29.9999);
+    const safeDeg = degFloat;
     const isOdd = SIGNS[signIdx].odd;
     const d2Mode = document.getElementById("d2ModeSelect").value;
 
@@ -1378,19 +1460,27 @@
 
   window.updateBody = function(idx, field, val) {
     if (!state) return;
-    state.bodies[idx][field] = val;
+    const body = state.bodies[idx];
+    if (!body || !["sign", "deg", "min", "motion", "note"].includes(field)) return;
+    if (["sign", "deg", "min"].includes(field) && body[field] !== val) delete body.longitude;
+    body[field] = val;
     renderEditor();
   };
 
   window.recalculateAll = function() {
     if (!state) return;
     state.weekday = parseInt(document.getElementById("weekdaySelect").value, 10);
+    if (state.settings) {
+      const {chartStyle, d2Mode, karakaMode} = readSettings();
+      Object.assign(state.settings, {chartStyle, d2Mode, karakaMode});
+    }
+    renderChartSettings();
     const vObj = VARGAS.find(v => v.id === activeVarga);
     document.getElementById("vargaDomainLabel").textContent = vObj.desc;
     document.getElementById("activeVargaColHeader").textContent = `${activeVarga} Sign`;
 
     const computed = state.bodies.map(b => {
-      const degFloat = clamp(b.deg + b.min / 60, 0, 29.9999);
+      const degFloat = b.longitude === undefined ? b.deg + b.min / 60 : longitudeParts(b.longitude).degreesInSign;
       const vargaSigns = {};
       VARGAS.forEach(v => {
         vargaSigns[v.id] = calcVargaSign(v.id, b.sign, degFloat);
@@ -1909,35 +1999,41 @@
     URL.revokeObjectURL(url);
   };
 
-  window.importJSON = function(event) {
-    const file = event.target.files[0];
+  window.importJSON = async function(event) {
+    const input = event.target;
+    const file = input.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const parsed = JSON.parse(e.target.result);
-        if (parsed && Array.isArray(parsed.bodies)) {
-          state = parsed;
-          selectedMahaIdx = null;
-          selectedVimMahaIdx = null;
-          document.getElementById("inName").value = state.name || "";
-          document.getElementById("inDate").value = state.birthDate || "";
-          document.getElementById("inTime").value = state.birthTime || "";
-          document.getElementById("inTz").value = state.tz ?? 7;
-          document.getElementById("inLocation").value = state.location || "";
-          document.getElementById("inLat").value = state.lat ?? "";
-          document.getElementById("inLon").value = state.lon ?? "";
-          document.getElementById("chartSubtitle").textContent = state.subtitle;
-          document.getElementById("emptyStateBanner").style.display = "none";
-          document.getElementById("workspaceContainer").style.display = "block";
-          renderEditor();
-          recalculateAll();
-        }
-      } catch (err) {
-        alert("Invalid JSON chart file.");
-      }
-    };
-    reader.readAsText(file);
+    input.value = "";
+    let chart;
+    try {
+      chart = validateChart(JSON.parse(await file.text()));
+    } catch {
+      alert("Invalid Fun-Hora chart file. Your current chart was kept.");
+      return;
+    }
+    state = chart;
+    selectedMahaIdx = null;
+    selectedVimMahaIdx = null;
+    occurrenceKey = "";
+    document.getElementById("birthOccurrenceField").hidden = true;
+    document.getElementById("cityQuickSelect").value = "";
+    for (const [id, value] of Object.entries({
+      inName: chart.name, inDate: chart.birthDate, inTime: chart.birthTime, inTz: chart.tz,
+      inZone: chart.settings?.timeZone ?? "", inLocation: chart.location, inLat: chart.lat, inLon: chart.lon
+    })) {
+      document.getElementById(id).value = value;
+    }
+    const defaults = {ayanMode: "lahiri", nodeMode: "true", d2Mode: "parashari", karakaMode: "7", chartStyle: "thai_round"};
+    for (const [key, id] of Object.entries(settingControls)) {
+      document.getElementById(id).value = chart.settings?.[key] ?? defaults[key];
+    }
+    document.getElementById("chartSubtitle").textContent = chart.subtitle;
+    document.getElementById("chartSettings").hidden = false;
+    document.getElementById("emptyStateBanner").style.display = "none";
+    document.getElementById("workspaceContainer").style.display = "block";
+    engineStatus.textContent = "Saved chart opened.";
+    renderEditor();
+    recalculateAll();
   };
 
   // Initialize empty state
@@ -1949,6 +2045,14 @@
     });
   }
 </script>
-<footer style="padding: 16px; color: var(--text-secondary);">Ephemeris by <a href="https://github.com/vedika-io/xalen-ephemeris">XALEN</a> · <a href="./NOTICE">Notices</a> · <a href="./LICENSE">Apache 2.0</a></footer>
+<footer style="padding: 16px; color: var(--text-secondary);">
+  <details>
+    <summary>About Fun-Hora and what’s new</summary>
+    <p>Fun-Hora is a Jyotish chart workbench with Thai round and square charts, 20 vargas, Jaimini, and Vimshottari.</p>
+    <p>Version 4.2 preserves full-precision positions, resolves birth times using historical zone rules, and saves calculation settings with each chart.</p>
+    <p>Chart calculations run in your browser. The optional Find button sends the location search to <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> via <a href="https://operations.osmfoundation.org/policies/nominatim/">Nominatim</a>.</p>
+  </details>
+  <p>Astronomical calculations by <a href="https://github.com/vedika-io/xalen-ephemeris">XALEN Ephemeris</a> · <a href="./NOTICE">Notices</a> · <a href="./LICENSE">Apache 2.0</a></p>
+</footer>
 </body>
 </html>
