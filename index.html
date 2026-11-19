@@ -1,0 +1,2228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fun-Hora • Jyotish 20-Varga, Jaimini & Vimshottari Engine v4.0</title>
+  <style>
+    :root {
+      --bg-primary: #14171a;
+      --bg-secondary: #1c2126;
+      --bg-tertiary: #242b32;
+      --border-color: #323b44;
+      --text-primary: #e6eaee;
+      --text-secondary: #9aa5b1;
+      --accent-sage: #7fa68a;
+      --accent-gold: #d4a359;
+      --accent-coral: #d9736c;
+      --accent-blue: #6b9ac4;
+      --font-sans: 'Segoe UI', 'Sarabun', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Consolas', 'Courier New', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      line-height: 1.48;
+      padding: 16px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 12px;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.18rem;
+      font-weight: 600;
+      color: var(--accent-sage);
+      letter-spacing: 0.3px;
+    }
+
+    header p {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+    }
+
+    button, select, input {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      padding: 6px 9px;
+      font-size: 0.82rem;
+      font-family: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    button:hover {
+      border-color: var(--accent-sage);
+      background: #2b343c;
+    }
+
+    button.primary {
+      background: #2b4233;
+      border-color: var(--accent-sage);
+      color: #e8f5ec;
+    }
+
+    button.gold-btn {
+      background: #42351e;
+      border-color: var(--accent-gold);
+      color: #f7ebd4;
+      font-weight: 600;
+    }
+
+    button.danger {
+      background: #422424;
+      border-color: var(--accent-coral);
+      color: #f7dedc;
+    }
+
+    .birth-panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--accent-sage);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .birth-panel h2 {
+      font-size: 0.95rem;
+      color: var(--accent-sage);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .birth-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field-group label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .tab-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      padding: 7px 13px;
+      border-radius: 6px;
+      color: var(--text-secondary);
+    }
+
+    .tab-btn.active {
+      background: #25332a;
+      border-color: var(--accent-sage);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .empty-banner {
+      background: var(--bg-secondary);
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .empty-banner h3 {
+      color: var(--accent-gold);
+      margin-bottom: 6px;
+      font-size: 1.05rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.05fr 1.15fr;
+      gap: 16px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 1100px) {
+      .grid-2, .grid-4 { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      color: var(--accent-gold);
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    th, td {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border-color);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--text-secondary);
+      font-weight: 600;
+      background: var(--bg-tertiary);
+    }
+
+    tr.clickable-row { cursor: pointer; }
+    tr.clickable-row:hover { background: rgba(127, 166, 138, 0.12); }
+    tr.selected-dasha { background: rgba(212, 163, 89, 0.16) !important; }
+
+    .mono { font-family: var(--font-mono); }
+    .badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.73rem;
+      font-weight: 600;
+    }
+    .b-exalt { background: #23422e; color: #8cd19d; border: 1px solid #3c6e4d; }
+    .b-own { background: #22384a; color: #84bce8; border: 1px solid #385c7a; }
+    .b-debil { background: #4a2323; color: #f08c8c; border: 1px solid #7a3838; }
+    .b-varg { background: #45381e; color: #e8c374; border: 1px solid #755f32; }
+    .b-visha { background: #3d2238; color: #e08cd1; border: 1px solid #6b3862; }
+
+    .thai-wheel-wrap {
+      max-width: 540px;
+      margin: 0 auto;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .south-chart {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, minmax(84px, auto));
+      border: 2px solid var(--accent-sage);
+      background: var(--bg-tertiary);
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .rashi-cell {
+      border: 1px solid var(--border-color);
+      padding: 5px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .rashi-cell.lagna-cell {
+      background: rgba(127, 166, 138, 0.14);
+      box-shadow: inset 0 0 0 1px var(--accent-sage);
+    }
+
+    .rashi-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      border-bottom: 1px dashed #38424d;
+      padding-bottom: 2px;
+      margin-bottom: 4px;
+    }
+
+    .rashi-planets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .planet-tag {
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: var(--bg-secondary);
+      border: 1px solid #3c4652;
+    }
+
+    .center-box {
+      grid-column: 2 / 4;
+      grid-row: 2 / 4;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 10px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .center-box h3 { color: var(--accent-sage); font-size: 0.98rem; margin-bottom: 3px; }
+    .center-box p { color: var(--text-secondary); font-size: 0.76rem; }
+
+    .varga-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 14px;
+    }
+
+    .varga-pill {
+      padding: 5px 9px;
+      font-size: 0.77rem;
+      border-radius: 4px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+    }
+
+    .varga-pill.tajika-pill {
+      border-style: dashed;
+    }
+
+    .varga-pill.active {
+      background: var(--accent-sage);
+      color: #111613;
+      font-weight: 700;
+      border-color: var(--accent-sage);
+      border-style: solid;
+    }
+
+    .input-mini { width: 54px; padding: 3px 5px; text-align: right; }
+    .select-mini { padding: 3px 4px; }
+    .info-note {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      border-left: 3px solid var(--accent-gold);
+      padding: 8px 10px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+
+    @media print {
+      body { background: #fff; color: #000; }
+      .toolbar, .birth-panel, .tabs, .varga-selector, button { display: none !important; }
+      .card { border: 1px solid #999; background: #fff; break-inside: avoid; }
+      #tab-grid { display: block !important; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>FUN-HORA • JYOTISH 20-VARGA, JAIMINI &amp; VIMSHOTTARI <span style="font-size:0.75rem; color:var(--accent-gold);">v4.0</span></h1>
+    <p id="chartSubtitle">No birth data loaded — Enter Date, Time &amp; Location below to calculate</p>
+  </div>
+  <div class="toolbar">
+    <select id="ayanamshaSelect">
+      <option value="lahiri" selected>Ayanamsha: Lahiri (Chitrapaksha)</option>
+      <option value="suriyayart">Ayanamsha: Thai Suriyayart (สุริยยาตร์)</option>
+      <option value="kp">Ayanamsha: Krishnamurti (KP)</option>
+      <option value="raman">Ayanamsha: B.V. Raman</option>
+    </select>
+    <select id="nodeModeSelect">
+      <option value="true" selected>Nodes: True Rahu / Vedic Ketu</option>
+      <option value="mean">Nodes: Mean Rahu / Vedic Ketu</option>
+    </select>
+    <select id="chartStyleSelect" onchange="recalculateAll()">
+      <option value="thai_round" selected>Thai Style: Round 12-Bhava Wheel (จักรราศีกลม)</option>
+      <option value="thai_square">Thai Style: 4-Square Grid (ดวงอีแปะ)</option>
+    </select>
+    <select id="d2ModeSelect" onchange="recalculateAll()">
+      <option value="parashari">D2: Parashari (Cancer/Leo)</option>
+      <option value="kashinatha">D2: Kashinatha (12-Sign)</option>
+      <option value="parivritti">D2: Parivritti Dvaya (12-Sign)</option>
+    </select>
+    <select id="karakaModeSelect" onchange="recalculateAll()">
+      <option value="7">Jaimini: 7 Karakas (Mars AK)</option>
+      <option value="8">Jaimini: 8 Karakas (Rahu AK)</option>
+    </select>
+    <button onclick="exportJSON()">Export JSON</button>
+    <button onclick="document.getElementById('importFile').click()">Import JSON</button>
+    <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importJSON(event)" />
+    <button onclick="window.print()">Print</button>
+  </div>
+</header>
+
+<!-- BIRTH DATE, TIME & LOCATION INPUT BAR -->
+<div class="birth-panel">
+  <h2>
+    <span>1. Birth Data &amp; Geographic Coordinates (วัน เดือน ปี เวลา และสถานที่เกิด)</span>
+    <span id="calcStatusText" class="mono" style="font-size:0.78rem; color:var(--text-secondary);">Ready • Built-in JavaScript ephemeris</span>
+  </h2>
+  <div class="birth-grid">
+    <div class="field-group">
+      <label>Name / Chart Title</label>
+      <input type="text" id="inName" placeholder="e.g., Native / Client Name" />
+    </div>
+    <div class="field-group">
+      <label>Date of Birth (YYYY-MM-DD)</label>
+      <input type="date" id="inDate" />
+    </div>
+    <div class="field-group">
+      <label>Time of Birth (24h Local)</label>
+      <input type="time" id="inTime" step="60" />
+    </div>
+    <div class="field-group">
+      <label>Timezone (UTC Offset)</label>
+      <select id="inTz">
+        <option value="7" selected>UTC+07:00 (Thailand / ICT)</option>
+        <option value="5.5">UTC+05:30 (India / IST)</option>
+        <option value="8">UTC+08:00 (Singapore / China)</option>
+        <option value="9">UTC+09:00 (Korea / Japan)</option>
+        <option value="0">UTC+00:00 (London / GMT)</option>
+        <option value="-5">UTC-05:00 (US Eastern)</option>
+        <option value="-8">UTC-08:00 (US Pacific)</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label>Quick City or Search Location</label>
+      <div style="display:flex; gap:4px;">
+        <input type="text" id="inLocation" placeholder="City / Province (e.g. Chiang Rai)" style="width:100%;" />
+        <button type="button" onclick="lookupLocation()" title="Geocode city name">Find</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Quick Thai / Regional Presets</label>
+      <select id="cityQuickSelect" onchange="applyQuickCity(this.value)">
+        <option value="">-- Select City --</option>
+        <option value="13.7563,100.5018,7,Bangkok">Bangkok (13.76°N, 100.50°E)</option>
+        <option value="19.9105,99.8406,7,Mueang Chiang Rai">Chiang Rai (19.91°N, 99.84°E)</option>
+        <option value="18.7883,98.9853,7,Chiang Mai">Chiang Mai (18.79°N, 98.99°E)</option>
+        <option value="12.6814,101.2816,7,Rayong">Rayong (12.68°N, 101.28°E)</option>
+        <option value="16.4322,102.8236,7,Khon Kaen">Khon Kaen (16.43°N, 102.82°E)</option>
+        <option value="7.8804,98.3923,7,Phuket">Phuket (7.88°N, 98.39°E)</option>
+        <option value="35.1796,129.0756,9,Busan">Busan, South Korea (35.18°N, 129.08°E)</option>
+        <option value="28.6139,77.2090,5.5,New Delhi">New Delhi, India (28.61°N, 77.21°E)</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label>Latitude (°N / -°S)</label>
+      <input type="number" id="inLat" step="0.0001" placeholder="e.g. 19.9105" />
+    </div>
+    <div class="field-group">
+      <label>Longitude (°E / -°W)</label>
+      <input type="number" id="inLon" step="0.0001" placeholder="e.g. 99.8406" />
+    </div>
+    <div class="field-group" style="display:flex; flex-direction:row; gap:6px;">
+      <button class="gold-btn" style="flex:1;" onclick="calculateFromBirthInput()">Calculate Chart</button>
+      <button onclick="resetAllEmpty()" title="Clear all inputs">Clear</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMPTY STATE BANNER -->
+<div id="emptyStateBanner" class="empty-banner">
+  <h3>No Chart Calculated Yet</h3>
+  <p>Enter a <strong>Date of Birth</strong>, <strong>Time of Birth</strong>, and <strong>Location / Coordinates</strong> above, then click <strong>Calculate Chart</strong>.</p>
+</div>
+
+<!-- MAIN ANALYTICAL WORKSPACE -->
+<div id="workspaceContainer" style="display:none;">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tab-vargas', this)">1. Divisional Charts (All 20 D-Charts)</button>
+    <button class="tab-btn" onclick="switchTab('tab-grid', this)">2. Core 4-Chart Grid (D1 • D9 • D10 • D24)</button>
+    <button class="tab-btn" onclick="switchTab('tab-jaimini', this)">3. Jaimini &amp; Vimshottari Dasha</button>
+    <button class="tab-btn" onclick="switchTab('tab-strength', this)">4. Panchadha Maitri Varga Vishwa &amp; Thai Taksa/Visha</button>
+    <button class="tab-btn" onclick="switchTab('tab-editor', this)">5. Fine-Tune Longitudes</button>
+  </div>
+
+  <!-- TAB 1: ALL 20 DIVISIONAL CHARTS -->
+  <div id="tab-vargas" class="panel active">
+    <div class="card">
+      <h2>
+        <span>Divisional Chart Inspector (Shodashavarga + D5, D6, D8, D11)</span>
+        <span id="vargaDomainLabel" style="font-size:0.8rem; color:var(--accent-sage);">D1 Rashi — Physical Body &amp; Root Destiny</span>
+      </h2>
+      <div class="varga-selector" id="vargaButtons"></div>
+
+      <div class="grid-2">
+        <div id="singleChartHost"></div>
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Body</th>
+                <th>D1 Longitude</th>
+                <th id="activeVargaColHeader">D1 Sign</th>
+                <th>Bhava (ภพ)</th>
+                <th>Dignity &amp; Rasi Drishti</th>
+              </tr>
+            </thead>
+            <tbody id="vargaTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: CORE 4-CHART GRID -->
+  <div id="tab-grid" class="panel">
+    <div class="card">
+      <h2>
+        <span>Consolidated Divisional Matrix: D1 (Root) • D9 (Dharma) • D10 (Career) • D24 (Mastery)</span>
+        <span style="font-size:0.8rem; color:var(--text-secondary);">Thai 12-Bhava Chakrarasi Synthesis</span>
+      </h2>
+      <div class="grid-4">
+        <div><div id="gridD1Host"></div></div>
+        <div><div id="gridD9Host"></div></div>
+        <div><div id="gridD10Host"></div></div>
+        <div><div id="gridD24Host"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: JAIMINI & VIMSHOTTARI SYSTEM -->
+  <div id="tab-jaimini" class="panel">
+    <div class="grid-2">
+      <div>
+        <div class="card">
+          <h2><span>Jaimini Chara Karakas &amp; Karakamsha</span><span id="klBadge" class="badge b-varg">KL</span></h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Karaka</th>
+                <th>Graha</th>
+                <th>Arc</th>
+                <th>D1 (Bhava)</th>
+                <th>D9 (From KL)</th>
+              </tr>
+            </thead>
+            <tbody id="karakaTableBody"></tbody>
+          </table>
+          <div style="margin-top:14px;">
+            <h3 style="font-size:0.88rem; color:var(--accent-sage); margin-bottom:6px;">Karakamsha (KL) &amp; Swamsha Wheel (D9 Projected from KL)</h3>
+            <div id="karakamshaChartHost"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2><span>Arudha Padas (AL, A2–A11, UL) &amp; True Rasi Drishti</span></h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Pada</th>
+                <th>Domain</th>
+                <th>Sign (Bhava)</th>
+                <th>Occupants &amp; Rasi Drishti Aspects</th>
+              </tr>
+            </thead>
+            <tbody id="arudhaTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>
+            <span>True Jaimini Chara Dasha (9th-House Direction + Dual-Lord Arbitration)</span>
+            <span id="dashaRuleBadge" class="badge b-own">Direction</span>
+          </h2>
+          <div class="info-note" id="dualLordLog">Dual-Lord Strength Arbitration: Computing...</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Mahadasha</th>
+                <th>Bhava</th>
+                <th>Lord Used</th>
+                <th>Years</th>
+                <th>Period</th>
+                <th>Occupants</th>
+              </tr>
+            </thead>
+            <tbody id="charaDashaBody"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h2><span id="antardashaTitle">Jaimini Chara Antardasha Sub-Periods (Click any Mahadasha row above)</span></h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Sub-Period (AD)</th>
+                <th>Bhava</th>
+                <th>Duration</th>
+                <th>Date Window</th>
+                <th>Occupants / Karakas</th>
+              </tr>
+            </thead>
+            <tbody id="antardashaBody"></tbody>
+          </table>
+        </div>
+
+        <!-- VIMSHOTTARI DASHA -->
+        <div class="card">
+          <h2>
+            <span>Vimshottari Dasha (120-Year Nakshatra Cycle)</span>
+            <span id="vimBalanceBadge" class="badge b-varg">Moon Nakshatra</span>
+          </h2>
+          <div class="info-note" id="vimSummaryNote">Click any Vimshottari Mahadasha row to inspect its 9 Bhukti (Antardasha) sub-periods.</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Mahadasha</th>
+                <th>D1 Sign &amp; Bhava</th>
+                <th>Duration</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+              </tr>
+            </thead>
+            <tbody id="vimMahaBody"></tbody>
+          </table>
+
+          <h3 id="vimBhuktiTitle" style="font-size:0.9rem; color:var(--accent-sage); margin:14px 0 8px 0;">Vimshottari Bhuktis (Sub-Periods)</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>MD / Bhukti</th>
+                <th>Bhukti Lord Position</th>
+                <th>Duration</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+              </tr>
+            </thead>
+            <tbody id="vimBhuktiBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: VARGA VISHWA & THAI ASTROLOGY -->
+  <div id="tab-strength" class="panel">
+    <div class="grid-2">
+      <div class="card">
+        <h2><span>Classical Panchadha Maitri Varga Vishwa (16-Chart 20-Point Scale)</span></h2>
+        <div class="info-note">Per BPHS convention, Varga Vishwa is computed across the 16 Shodashavarga charts (sum of weights = 20.00), while the 20-Chart Own/Exalted column includes D5, D6, D8, and D11.</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Graha</th>
+              <th>Own/Exalt (16 / 20)</th>
+              <th>Varga Vishwa (/20)</th>
+              <th>Vargottama</th>
+              <th>D9 &amp; D60 Dignity</th>
+            </tr>
+          </thead>
+          <tbody id="vishwaTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2><span>Thai Astrology Diagnostics (Taksa, Riksha &amp; Visha)</span></h2>
+        <div style="margin-bottom:10px; display:flex; gap:10px; align-items:center;">
+          <label style="font-size:0.84rem; color:var(--text-secondary);">Birth Weekday (Taksa): </label>
+          <select id="weekdaySelect" onchange="recalculateAll()">
+            <option value="0">Sunday (วันอาทิตย์)</option>
+            <option value="1">Monday (วันจันทร์)</option>
+            <option value="2">Tuesday (วันอังคาร)</option>
+            <option value="3">Wednesday Day (วันพุธกลางวัน)</option>
+            <option value="4">Thursday (วันพฤหัสบดี)</option>
+            <option value="5">Friday (วันศุกร์)</option>
+            <option value="6">Saturday (วันเสาร์)</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Graha</th>
+              <th>Taksa Role</th>
+              <th>Nakshatra &amp; Pada</th>
+              <th>Motion / Visha Status</th>
+            </tr>
+          </thead>
+          <tbody id="thaiTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: EDITOR -->
+  <div id="tab-editor" class="panel">
+    <div class="card">
+      <h2>
+        <span>Fine-Tune Computed Sidereal Longitudes</span>
+        <button class="primary" onclick="recalculateAll()">Apply Edits &amp; Recalculate</button>
+      </h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Body</th>
+            <th>Sign (0=Aries ... 11=Pisces)</th>
+            <th>Degrees (0–29)</th>
+            <th>Minutes (0–59)</th>
+            <th>Motion Flag</th>
+            <th>Nakshatra / Note</th>
+          </tr>
+        </thead>
+        <tbody id="editorTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  // =========================================================================
+  // CONSTANTS & ASTROLOGICAL TABLES
+  // =========================================================================
+  const SIGNS = [
+    { en: "Aries", th: "เมษ", abbr: "Ar", lord: "Mars", modality: "movable", odd: true },
+    { en: "Taurus", th: "พฤษภ", abbr: "Ta", lord: "Venus", modality: "fixed", odd: false },
+    { en: "Gemini", th: "เมถุน", abbr: "Ge", lord: "Mercury", modality: "dual", odd: true },
+    { en: "Cancer", th: "กรกฎ", abbr: "Cn", lord: "Moon", modality: "movable", odd: false },
+    { en: "Leo", th: "สิงห์", abbr: "Le", lord: "Sun", modality: "fixed", odd: true },
+    { en: "Virgo", th: "กันย์", abbr: "Vi", lord: "Mercury", modality: "dual", odd: false },
+    { en: "Libra", th: "ตุลย์", abbr: "Li", lord: "Venus", modality: "movable", odd: true },
+    { en: "Scorpio", th: "พิจิก", abbr: "Sc", lord: "Mars", modality: "fixed", odd: false },
+    { en: "Sagittarius", th: "ธนู", abbr: "Sg", lord: "Jupiter", modality: "dual", odd: true },
+    { en: "Capricorn", th: "มังกร", abbr: "Cp", lord: "Saturn", modality: "movable", odd: false },
+    { en: "Aquarius", th: "กุมภ์", abbr: "Aq", lord: "Saturn", modality: "fixed", odd: true },
+    { en: "Pisces", th: "มีน", abbr: "Pi", lord: "Jupiter", modality: "dual", odd: false }
+  ];
+
+  const THAI_BHAVAS = [
+    "ตนุ", "กดุมภะ", "สหัชชะ", "พันธุ", "ปุตตะ", "อริ",
+    "ปัตนิ", "มรณะ", "ศุภะ", "กัมมะ", "ลาภะ", "วินาศ"
+  ];
+
+  const DIGNITIES = {
+    Sun:     { exalt: 0, debil: 6, own: [4], friends: ["Moon", "Mars", "Jupiter"], enemies: ["Venus", "Saturn"] },
+    Moon:    { exalt: 1, debil: 7, own: [3], friends: ["Sun", "Mercury"], enemies: [] },
+    Mars:    { exalt: 9, debil: 3, own: [0, 7], friends: ["Sun", "Moon", "Jupiter"], enemies: ["Mercury"] },
+    Mercury: { exalt: 5, debil: 11, own: [2, 5], friends: ["Sun", "Venus"], enemies: ["Moon"] },
+    Jupiter: { exalt: 3, debil: 9, own: [8, 11], friends: ["Sun", "Moon", "Mars"], enemies: ["Mercury", "Venus"] },
+    Venus:   { exalt: 11, debil: 5, own: [1, 6], friends: ["Mercury", "Saturn"], enemies: ["Sun", "Moon"] },
+    Saturn:  { exalt: 6, debil: 0, own: [9, 10], friends: ["Mercury", "Venus"], enemies: ["Sun", "Moon", "Mars"] },
+    Rahu:    { exalt: 1, debil: 7, own: [10], friends: ["Mercury", "Venus", "Saturn"], enemies: ["Sun", "Moon", "Mars"] },
+    Ketu:    { exalt: 7, debil: 1, own: [7], friends: ["Mars", "Venus", "Saturn"], enemies: ["Sun", "Moon"] }
+  };
+
+  const NAKSHATRAS = [
+    "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra",
+    "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni",
+    "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha",
+    "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha",
+    "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"
+  ];
+
+  const THAI_RISHKA = [
+    "ทลิทโทฤกษ์", "มหัทธโนฤกษ์", "โจโรฤกษ์", "ภูมิปาโลฤกษ์", "เทศาตรีฤกษ์",
+    "เทวีฤกษ์", "เพชฌฆาตฤกษ์", "ราชาฤกษ์", "สมโณฤกษ์"
+  ];
+
+  const VIM_ORDER = [
+    { key: "Ketu",    label: "Ketu (๙)",    years: 7 },
+    { key: "Venus",   label: "Venus (๖)",   years: 20 },
+    { key: "Sun",     label: "Sun (๑)",     years: 6 },
+    { key: "Moon",    label: "Moon (๒)",    years: 10 },
+    { key: "Mars",    label: "Mars (๓)",    years: 7 },
+    { key: "Rahu",    label: "Rahu (๘)",    years: 18 },
+    { key: "Jupiter", label: "Jupiter (๕)", years: 16 },
+    { key: "Saturn",  label: "Saturn (๗)",  years: 19 },
+    { key: "Mercury", label: "Mercury (๔)", years: 17 }
+  ];
+
+  const VARGAS = [
+    { id: "D1",  name: "D1 Rashi (จักรราศี)", desc: "D1 Rashi — Physical Body, Root Destiny & Tangible Circumstances", weight: 3.5, isShodasha: true },
+    { id: "D2",  name: "D2 Hora", desc: "D2 Hora — Wealth, Resources & Financial Polarity", weight: 1.0, isShodasha: true },
+    { id: "D3",  name: "D3 Drekkana (ตรียางศ์)", desc: "D3 Drekkana — Initiative, Courage, Siblings & Tactical Execution", weight: 1.0, isShodasha: true },
+    { id: "D4",  name: "D4 Chaturthamsha", desc: "D4 Chaturthamsha — Fixed Assets, Property, Residence & Sukha", weight: 1.0, isShodasha: true },
+    { id: "D5",  name: "D5 Panchamsha", desc: "D5 Panchamsha — Authority, Fame, Disciples & Purva Punya (30° ÷ 5)", weight: 0.0, isShodasha: false },
+    { id: "D6",  name: "D6 Shashthamsha", desc: "D6 Shashthamsha — Acute Health Crises, Litigation, Enemies & Debts (30° ÷ 6)", weight: 0.0, isShodasha: false },
+    { id: "D7",  name: "D7 Saptamsha", desc: "D7 Saptamsha — Progeny, Students & Creative Legacy", weight: 1.0, isShodasha: true },
+    { id: "D8",  name: "D8 Ashtamsha", desc: "D8 Ashtamsha — Longevity, Sudden Transformations & Occult Depth (30° ÷ 8)", weight: 0.0, isShodasha: false },
+    { id: "D9",  name: "D9 Navamsha (นวางศ์จักร)", desc: "D9 Navamsha — Dharma, Inner Planetary Strength & Partnerships", weight: 3.0, isShodasha: true },
+    { id: "D10", name: "D10 Dashamsha", desc: "D10 Dashamsha — Career, Public Status & Institutional Authority", weight: 1.0, isShodasha: true },
+    { id: "D11", name: "D11 Ekadashamsha", desc: "D11 Ekadashamsha (Rudramsha) — Windfall Gains, Network Leverage & Elimination of Rivals (30° ÷ 11)", weight: 0.0, isShodasha: false },
+    { id: "D12", name: "D12 Dwadashamsha", desc: "D12 Dwadashamsha — Parents, Lineage & Ancestral Inheritance", weight: 1.0, isShodasha: true },
+    { id: "D16", name: "D16 Shodashamsha", desc: "D16 Shodashamsha — Vehicles, Comforts & Mental Happiness", weight: 1.0, isShodasha: true },
+    { id: "D20", name: "D20 Vimshamsha", desc: "D20 Vimshamsha — Spiritual Practice (Upasana) & Inner Evolution", weight: 0.5, isShodasha: true },
+    { id: "D24", name: "D24 Chaturvimshamsha", desc: "D24 Chaturvimshamsha — Formal Education, Research & Mastery (Siddhi)", weight: 0.5, isShodasha: true },
+    { id: "D27", name: "D27 Saptavimshamsha", desc: "D27 Saptavimshamsha — Physical Stamina & Inherent Strengths", weight: 0.5, isShodasha: true },
+    { id: "D30", name: "D30 Trimshamsha", desc: "D30 Trimshamsha — Friction Zones, Afflictions & Character Tests", weight: 1.0, isShodasha: true },
+    { id: "D40", name: "D40 Khavedamsha", desc: "D40 Khavedamsha — Maternal Lineage & Subtle Auspiciousness", weight: 0.5, isShodasha: true },
+    { id: "D45", name: "D45 Akshavedamsha", desc: "D45 Akshavedamsha — Paternal Lineage & Ethical Integrity", weight: 0.5, isShodasha: true },
+    { id: "D60", name: "D60 Shashtiamsha", desc: "D60 Shashtiamsha — Root Prarabdha Karma & Past-Life Imprints", weight: 3.0, isShodasha: true }
+  ];
+
+  let state = null;
+  let activeVarga = "D1";
+  let selectedMahaIdx = null;
+  let selectedVimMahaIdx = null;
+  let cachedCharaPeriods = [];
+  let cachedVimPeriods = [];
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[char]);
+  }
+
+  function mod12(n) { return ((n % 12) + 12) % 12; }
+  function norm360(deg) { return ((deg % 360) + 360) % 360; }
+  function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+  window.applyQuickCity = function(val) {
+    if (!val) return;
+    const [lat, lon, tz, name] = val.split(",");
+    document.getElementById("inLat").value = lat;
+    document.getElementById("inLon").value = lon;
+    document.getElementById("inTz").value = tz;
+    document.getElementById("inLocation").value = name;
+  };
+
+  window.lookupLocation = async function() {
+    const query = document.getElementById("inLocation").value.trim();
+    if (!query) {
+      alert("Enter a city or province name first (e.g., Chiang Rai, Rayong, Bangkok).");
+      return;
+    }
+    const statusEl = document.getElementById("calcStatusText");
+    statusEl.textContent = `Searching coordinates for "${query}"...`;
+    try {
+      const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
+      const data = await resp.json();
+      if (data && data.length > 0) {
+        document.getElementById("inLat").value = parseFloat(data[0].lat).toFixed(4);
+        document.getElementById("inLon").value = parseFloat(data[0].lon).toFixed(4);
+        statusEl.textContent = `Found: ${data[0].display_name.split(",").slice(0, 2).join(",")}`;
+      } else {
+        statusEl.textContent = "Location not found — enter Latitude & Longitude manually.";
+      }
+    } catch (e) {
+      statusEl.textContent = "Geocoding offline — select a Quick City or enter Lat/Lon.";
+    }
+  };
+
+  window.resetAllEmpty = function() {
+    state = null;
+    selectedMahaIdx = null;
+    selectedVimMahaIdx = null;
+    document.getElementById("inName").value = "";
+    document.getElementById("inDate").value = "";
+    document.getElementById("inTime").value = "";
+    document.getElementById("inLocation").value = "";
+    document.getElementById("inLat").value = "";
+    document.getElementById("inLon").value = "";
+    document.getElementById("cityQuickSelect").value = "";
+    document.getElementById("chartSubtitle").textContent = "No birth data loaded — Enter Date, Time & Location below to calculate";
+    document.getElementById("calcStatusText").textContent = "Ready • Built-in JavaScript ephemeris";
+    document.getElementById("emptyStateBanner").style.display = "block";
+    document.getElementById("workspaceContainer").style.display = "none";
+  };
+
+  // =========================================================================
+  // BUILT-IN JAVASCRIPT EPHEMERIS
+  // =========================================================================
+  function toJulianDay(year, month, day, utHours) {
+    let y = year, m = month;
+    if (m <= 2) { y -= 1; m += 12; }
+    const A = Math.floor(y / 100);
+    const B = 2 - A + Math.floor(A / 4);
+    return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + (utHours / 24.0) + B - 1524.5;
+  }
+
+  function getDeltaTSeconds(year) {
+    const t = (year - 2000) / 100;
+    if (year >= 1970 && year <= 2005) {
+      const u = year - 1979;
+      return 49.5 + 0.78 * u;
+    }
+    return 64.0 + 32.0 * t * t;
+  }
+
+  function getNutationAndObliquity(jdTT) {
+    const T = (jdTT - 2451545.0) / 36525.0;
+    const deg2rad = Math.PI / 180;
+    const D = norm360(297.85036 + 445267.111480 * T - 0.0019142 * T * T) * deg2rad;
+    const M = norm360(357.52772 + 35999.050340 * T - 0.0001603 * T * T) * deg2rad;
+    const Mp = norm360(134.96298 + 477198.867398 * T + 0.0086972 * T * T) * deg2rad;
+    const F = norm360(93.27191 + 483202.017538 * T - 0.0036825 * T * T) * deg2rad;
+    const om = norm360(125.04452 - 1934.136261 * T + 0.0020708 * T * T) * deg2rad;
+
+    const dPsiArcsec = -17.1996 * Math.sin(om)
+                       - 1.3187 * Math.sin(2 * F - 2 * D + 2 * om)
+                       - 0.2274 * Math.sin(2 * F + 2 * om)
+                       + 0.2062 * Math.sin(2 * om)
+                       + 0.1426 * Math.sin(M)
+                       + 0.0712 * Math.sin(Mp);
+
+    const dEpsArcsec = 9.2025 * Math.cos(om)
+                       + 0.5736 * Math.cos(2 * F - 2 * D + 2 * om)
+                       + 0.0977 * Math.cos(2 * F + 2 * om)
+                       - 0.0895 * Math.cos(2 * om);
+
+    const eps0Arcsec = 84381.448 - 46.8150 * T - 0.00059 * T * T + 0.001813 * T * T * T;
+    const dPsi = dPsiArcsec / 3600.0;
+    const trueEps = (eps0Arcsec + dEpsArcsec) / 3600.0;
+    return { dPsi, trueEps };
+  }
+
+  function getAyanamsha(jdTT, mode) {
+    const T = (jdTT - 2451545.0) / 36525.0;
+    const lahiri = 23.857092 + 1.39697137 * T + 0.0003086 * T * T;
+    if (mode === "suriyayart") return lahiri - 0.5920;
+    if (mode === "kp") return lahiri - 0.098333;
+    if (mode === "raman") return lahiri - 1.446389;
+    return lahiri;
+  }
+
+  function solveKepler(M_rad, e) {
+    let E = M_rad + e * Math.sin(M_rad) * (1.0 + e * Math.cos(M_rad));
+    for (let i = 0; i < 10; i++) {
+      const f = E - e * Math.sin(E) - M_rad;
+      const fp = 1.0 - e * Math.cos(E);
+      const dE = f / fp;
+      E -= dE;
+      if (Math.abs(dE) < 1e-11) break;
+    }
+    return E;
+  }
+
+  function computeApparentTropicalLongitudes(jdTT, nodeMode) {
+    const T = (jdTT - 2451545.0) / 36525.0;
+    const deg2rad = Math.PI / 180;
+    const rad2deg = 180 / Math.PI;
+    const { dPsi } = getNutationAndObliquity(jdTT);
+
+    const L0 = norm360(280.46646 + 36000.76983 * T + 0.0003032 * T * T);
+    const M_sun = norm360(357.52911 + 35999.05029 * T - 0.0001537 * T * T);
+    const e_earth = 0.016708634 - 0.000042037 * T - 0.0000001267 * T * T;
+    const Mrad = M_sun * deg2rad;
+
+    const C_sun = (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(Mrad)
+                + (0.019993 - 0.000101 * T) * Math.sin(2 * Mrad)
+                + 0.000289 * Math.sin(3 * Mrad);
+
+    const trueLonSunGeom = norm360(L0 + C_sun);
+    const trueAnomSun = norm360(M_sun + C_sun) * deg2rad;
+    const R_earth = (1.000001018 * (1 - e_earth * e_earth)) / (1 + e_earth * Math.cos(trueAnomSun));
+
+    const omega = norm360(125.04 - 1934.136 * T) * deg2rad;
+    const appLonSun = norm360(trueLonSunGeom - 0.00569 - 0.00478 * Math.sin(omega));
+
+    const earthHelioLon = norm360(trueLonSunGeom + 180.0) * deg2rad;
+    const xe = R_earth * Math.cos(earthHelioLon);
+    const ye = R_earth * Math.sin(earthHelioLon);
+
+    const Lp = norm360(218.3164477 + 481267.88123421 * T - 0.0015786 * T * T + (T * T * T) / 538841);
+    const D  = norm360(297.8501921 + 445267.1114034 * T - 0.0018819 * T * T + (T * T * T) / 545868);
+    const M  = M_sun;
+    const Mp = norm360(134.9633964 + 477198.8675055 * T + 0.0087414 * T * T + (T * T * T) / 69699);
+    const F  = norm360(93.2720950 + 483202.0175233 * T - 0.0036539 * T * T);
+    const A1 = norm360(119.75 + 131.849 * T) * deg2rad;
+    const A2 = norm360(53.09 + 479264.290 * T) * deg2rad;
+    const E_ecc = 1 - 0.002516 * T - 0.0000074 * T * T;
+
+    const dRad = D * deg2rad, mRad = M * deg2rad, mpRad = Mp * deg2rad, fRad = F * deg2rad;
+    let sumL = 0;
+    sumL += 6288774 * Math.sin(mpRad);
+    sumL += 1274027 * Math.sin(2 * dRad - mpRad);
+    sumL += 658314  * Math.sin(2 * dRad);
+    sumL += 213618  * Math.sin(2 * mpRad);
+    sumL -= 185116  * E_ecc * Math.sin(mRad);
+    sumL -= 114332  * Math.sin(2 * fRad);
+    sumL += 58793   * Math.sin(2 * dRad - 2 * mpRad);
+    sumL += 57066   * E_ecc * Math.sin(2 * dRad - mRad - mpRad);
+    sumL += 53322   * Math.sin(2 * dRad + mpRad);
+    sumL += 45758   * E_ecc * Math.sin(2 * dRad - mRad);
+    sumL -= 40923   * E_ecc * Math.sin(mRad - mpRad);
+    sumL -= 34720   * Math.sin(dRad);
+    sumL -= 30383   * E_ecc * Math.sin(mRad + mpRad);
+    sumL += 15327   * Math.sin(2 * dRad - 2 * fRad);
+    sumL -= 12528   * Math.sin(mpRad + 2 * fRad);
+    sumL += 10980   * Math.sin(mpRad - 2 * fRad);
+    sumL += 10675   * Math.sin(4 * dRad - mpRad);
+    sumL += 10034   * Math.sin(3 * mpRad);
+    sumL += 8548    * Math.sin(4 * dRad - 2 * mpRad);
+    sumL -= 7888    * E_ecc * Math.sin(2 * dRad + mRad - mpRad);
+    sumL -= 6766    * E_ecc * Math.sin(2 * dRad + mRad);
+    sumL -= 5163    * Math.sin(dRad - mpRad);
+    sumL += 4987    * E_ecc * Math.sin(dRad + mRad);
+    sumL += 4036    * E_ecc * Math.sin(2 * dRad - mRad + mpRad);
+    sumL += 3994    * Math.sin(2 * dRad + 2 * mpRad);
+    sumL += 3861    * Math.sin(4 * dRad);
+    sumL += 3665    * Math.sin(2 * dRad - 3 * mpRad);
+    sumL -= 2689    * E_ecc * Math.sin(mRad - 2 * mpRad);
+    sumL -= 2602    * Math.sin(2 * dRad - mpRad + 2 * fRad);
+    sumL += 2390    * E_ecc * Math.sin(2 * dRad - mRad - 2 * mpRad);
+    sumL -= 2348    * Math.sin(dRad + mpRad);
+    sumL += 2236    * E_ecc * E_ecc * Math.sin(2 * dRad - 2 * mRad);
+    sumL -= 2120    * E_ecc * Math.sin(mRad + 2 * mpRad);
+    sumL -= 2069    * E_ecc * E_ecc * Math.sin(2 * mRad);
+    sumL += 2048    * E_ecc * E_ecc * Math.sin(2 * dRad - 2 * mRad - mpRad);
+    sumL += 3958    * Math.sin(A1);
+    sumL += 1962    * Math.sin((Lp - F) * deg2rad);
+    sumL += 318     * Math.sin(A2);
+
+    const appLonMoon = norm360(Lp + sumL / 1000000.0 + dPsi);
+
+    const planets = {
+      Mercury: {
+        L: 252.250906 + 149474.0722491 * T + 0.00030350 * T * T,
+        a: 0.387098310,
+        e: 0.20563175 + 0.000020407 * T - 0.0000000283 * T * T,
+        i: 7.004986 + 0.0018215 * T - 0.00001810 * T * T,
+        O: 48.330893 + 1.1861883 * T + 0.00017542 * T * T,
+        w: 77.456119 + 1.5564776 * T + 0.00029544 * T * T
+      },
+      Venus: {
+        L: 181.979801 + 58519.2130302 * T + 0.00031014 * T * T,
+        a: 0.723329820,
+        e: 0.00677192 - 0.000047765 * T + 0.0000000981 * T * T,
+        i: 3.394662 + 0.0010037 * T - 0.00000088 * T * T,
+        O: 76.679920 + 0.9011206 * T + 0.00040618 * T * T,
+        w: 131.563703 + 1.4022288 * T - 0.00107618 * T * T
+      },
+      Mars: {
+        L: 355.433000 + 19141.6964471 * T + 0.00031052 * T * T,
+        a: 1.523679342,
+        e: 0.09340065 + 0.000090484 * T - 0.0000000806 * T * T,
+        i: 1.849726 - 0.0006011 * T + 0.00001276 * T * T,
+        O: 49.558093 + 0.7720959 * T + 0.00001557 * T * T,
+        w: 336.060234 + 1.8410449 * T + 0.00013477 * T * T
+      },
+      Jupiter: {
+        L: 34.351519 + 3036.3027748 * T + 0.00022330 * T * T,
+        a: 5.202603209,
+        e: 0.04849793 + 0.000163225 * T - 0.0000004714 * T * T,
+        i: 1.303267 - 0.0054965 * T + 0.00000466 * T * T,
+        O: 100.464407 + 1.0209774 * T + 0.00040315 * T * T,
+        w: 14.331207 + 1.6126352 * T + 0.00103042 * T * T
+      },
+      Saturn: {
+        L: 50.077444 + 1223.5110686 * T + 0.00051908 * T * T,
+        a: 9.554909192,
+        e: 0.05554814 - 0.000346641 * T - 0.0000006436 * T * T,
+        i: 2.488879 - 0.0037362 * T - 0.00001519 * T * T,
+        O: 113.665503 + 0.8770880 * T - 0.00012176 * T * T,
+        w: 93.057237 + 1.9637613 * T + 0.00083753 * T * T
+      }
+    };
+
+    const geocentric = { Sun: appLonSun, Moon: appLonMoon };
+    const Mj_rad = norm360(20.020 + 3034.906 * T) * deg2rad;
+    const Ms_rad = norm360(317.020 + 1222.114 * T) * deg2rad;
+
+    Object.keys(planets).forEach(name => {
+      const p = planets[name];
+      let L_deg = norm360(p.L);
+      if (name === "Jupiter") {
+        L_deg += -0.332 * Math.sin(2 * Mj_rad - 5 * Ms_rad - 67.6 * deg2rad)
+                 - 0.056 * Math.sin(2 * Mj_rad - 2 * Ms_rad + 21.0 * deg2rad)
+                 + 0.042 * Math.sin(3 * Mj_rad - 5 * Ms_rad + 21.0 * deg2rad)
+                 - 0.036 * Math.sin(Mj_rad - 2 * Ms_rad);
+      } else if (name === "Saturn") {
+        L_deg += +0.812 * Math.sin(2 * Mj_rad - 5 * Ms_rad - 67.6 * deg2rad)
+                 - 0.229 * Math.cos(2 * Mj_rad - 4 * Ms_rad - 2.0 * deg2rad)
+                 + 0.119 * Math.sin(Mj_rad - 2 * Ms_rad - 3.0 * deg2rad)
+                 + 0.046 * Math.sin(2 * Mj_rad - 6 * Ms_rad - 69.0 * deg2rad);
+      }
+
+      const M_p = norm360(L_deg - p.w);
+      const E_p = solveKepler(M_p * deg2rad, p.e);
+
+      const xv = p.a * (Math.cos(E_p) - p.e);
+      const yv = p.a * Math.sqrt(1 - p.e * p.e) * Math.sin(E_p);
+      const v = Math.atan2(yv, xv) * rad2deg;
+      const r = Math.sqrt(xv * xv + yv * yv);
+
+      const Orad = p.O * deg2rad;
+      const uRad = (v + p.w - p.O) * deg2rad;
+      const irad = p.i * deg2rad;
+
+      const xh = r * (Math.cos(Orad) * Math.cos(uRad) - Math.sin(Orad) * Math.sin(uRad) * Math.cos(irad));
+      const yh = r * (Math.sin(Orad) * Math.cos(uRad) + Math.cos(Orad) * Math.sin(uRad) * Math.cos(irad));
+
+      const xg = xh - xe;
+      const yg = yh - ye;
+
+      const geoLonGeom = norm360(Math.atan2(yg, xg) * rad2deg);
+      const aberration = -0.005693 * Math.cos((trueLonSunGeom - geoLonGeom) * deg2rad);
+      geocentric[name] = norm360(geoLonGeom + aberration + dPsi);
+    });
+
+    const meanNode = norm360(125.0445479 - 1934.1362891 * T + 0.0020754 * T * T);
+    let rahuTrop = meanNode;
+    if (nodeMode === "true") {
+      const trueCorr = -1.4979 * Math.sin(2 * (dRad - fRad))
+                       - 0.1500 * Math.sin(mRad)
+                       - 0.1226 * Math.sin(2 * dRad)
+                       + 0.1176 * Math.sin(2 * fRad)
+                       - 0.0801 * Math.sin(2 * (mpRad - fRad));
+      rahuTrop = norm360(meanNode + trueCorr);
+    }
+    rahuTrop = norm360(rahuTrop + dPsi);
+
+    geocentric.Rahu = rahuTrop;
+    geocentric.Ketu = norm360(rahuTrop + 180.0);
+
+    return { geocentric };
+  }
+
+  function computeAscendantTropical(jdUT, jdTT, latDeg, lonDeg) {
+    const T_ut = (jdUT - 2451545.0) / 36525.0;
+    const { dPsi, trueEps } = getNutationAndObliquity(jdTT);
+    const deg2rad = Math.PI / 180;
+    const rad2deg = 180 / Math.PI;
+
+    const gmst = norm360(
+      280.46061837 +
+      360.98564736629 * (jdUT - 2451545.0) +
+      0.000387933 * T_ut * T_ut -
+      (T_ut * T_ut * T_ut) / 38710000.0
+    );
+
+    const gast = norm360(gmst + dPsi * Math.cos(trueEps * deg2rad));
+    const ramcRad = norm360(gast + lonDeg) * deg2rad;
+    const latRad = latDeg * deg2rad;
+    const epsRad = trueEps * deg2rad;
+
+    const num = Math.cos(ramcRad);
+    const den = -(Math.sin(ramcRad) * Math.cos(epsRad) + Math.tan(latRad) * Math.sin(epsRad));
+    return norm360(Math.atan2(num, den) * rad2deg);
+  }
+
+  function getThaiVishaStatus(signIdx, degFloat) {
+    const vishaTable = {
+      0:  [{ min: 0, max: 3.333, type: "พิษนาค" }],
+      1:  [{ min: 10, max: 13.333, type: "พิษครุฑ" }],
+      2:  [{ min: 20, max: 23.333, type: "พิษสุนัข" }],
+      3:  [{ min: 26.667, max: 30, type: "พิษนาค" }],
+      4:  [{ min: 16.667, max: 20, type: "พิษครุฑ" }],
+      5:  [{ min: 0, max: 3.333, type: "พิษนาค" }],
+      6:  [{ min: 13.333, max: 16.667, type: "พิษสุนัข" }],
+      7:  [{ min: 26.667, max: 30, type: "พิษนาค" }],
+      8:  [{ min: 6.667, max: 10, type: "พิษนาค" }],
+      9:  [{ min: 20, max: 23.333, type: "พิษครุฑ" }],
+      10: [{ min: 13.333, max: 16.667, type: "พิษสุนัข" }],
+      11: [{ min: 26.667, max: 30, type: "พิษนาค" }]
+    };
+    const zones = vishaTable[signIdx] || [];
+    for (const z of zones) {
+      if (degFloat >= z.min && degFloat < z.max) return z.type;
+    }
+    return "";
+  }
+
+  window.calculateFromBirthInput = function() {
+    const dateVal = document.getElementById("inDate").value;
+    const timeVal = document.getElementById("inTime").value;
+    const latVal = parseFloat(document.getElementById("inLat").value);
+    const lonVal = parseFloat(document.getElementById("inLon").value);
+    const tzVal = parseFloat(document.getElementById("inTz").value);
+    const locName = document.getElementById("inLocation").value.trim() || `${latVal.toFixed(2)}°, ${lonVal.toFixed(2)}°`;
+    const personName = document.getElementById("inName").value.trim();
+
+    if (!dateVal || !timeVal || !Number.isFinite(tzVal) ||
+        !Number.isFinite(latVal) || Math.abs(latVal) > 90 ||
+        !Number.isFinite(lonVal) || Math.abs(lonVal) > 180) {
+      alert("Enter a birth date, time, UTC offset, and valid coordinates.");
+      return;
+    }
+
+    const [Y, M, D] = dateVal.split("-").map(Number);
+    const [hh, mm] = timeVal.split(":").map(Number);
+    const localHours = hh + mm / 60.0;
+    const utHours = localHours - tzVal;
+
+    const ayanMode = document.getElementById("ayanamshaSelect").value;
+    const nodeMode = document.getElementById("nodeModeSelect").value;
+
+    const meanSpeeds = {
+      Mars: 0.524,
+      Mercury: 1.383,
+      Jupiter: 0.0831,
+      Venus: 1.200,
+      Saturn: 0.0335
+    };
+
+    const siderealMap = {};
+    const speedMap = {};
+    const jdUT = toJulianDay(Y, M, D, utHours);
+    const deltaTDays = getDeltaTSeconds(Y + (M - 1) / 12.0) / 86400.0;
+    const jdTT = jdUT + deltaTDays;
+    const ayan = getAyanamsha(jdTT, ayanMode);
+
+    const { geocentric } = computeApparentTropicalLongitudes(jdTT, nodeMode);
+    const { geocentric: geoPrev } = computeApparentTropicalLongitudes(jdTT - 0.5, nodeMode);
+    const { geocentric: geoNext } = computeApparentTropicalLongitudes(jdTT + 0.5, nodeMode);
+    const ascTrop = computeAscendantTropical(jdUT, jdTT, latVal, lonVal);
+
+    siderealMap.Lagna = norm360(ascTrop - ayan);
+    ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"].forEach(k => {
+      siderealMap[k] = norm360(geocentric[k] - ayan);
+      if (meanSpeeds[k]) {
+        let ds = geoNext[k] - geoPrev[k];
+        if (ds > 180) ds -= 360;
+        if (ds < -180) ds += 360;
+        speedMap[k] = ds;
+      }
+    });
+
+    const bodyMeta = [
+      { key: "Lagna",   label: "Lagna (ล)",   thNum: "ล" },
+      { key: "Sun",     label: "Sun (๑)",     thNum: "๑" },
+      { key: "Moon",    label: "Moon (๒)",    thNum: "๒" },
+      { key: "Mars",    label: "Mars (๓)",    thNum: "๓" },
+      { key: "Mercury", label: "Mercury (๔)", thNum: "๔" },
+      { key: "Jupiter", label: "Jupiter (๕)", thNum: "๕" },
+      { key: "Venus",   label: "Venus (๖)",   thNum: "๖" },
+      { key: "Saturn",  label: "Saturn (๗)",  thNum: "๗" },
+      { key: "Rahu",    label: "Rahu (๘)",    thNum: "๘" },
+      { key: "Ketu",    label: "Ketu (๙)",    thNum: "๙" }
+    ];
+
+    const bodies = bodyMeta.map(bm => {
+      const lon = siderealMap[bm.key];
+      const sign = Math.floor(lon / 30);
+      const rem = lon - sign * 30;
+      let deg = Math.floor(rem);
+      let min = Math.round((rem - deg) * 60);
+      if (min === 60) { min = 0; deg += 1; }
+      const finalSign = deg === 30 ? mod12(sign + 1) : sign;
+      const finalDeg = deg === 30 ? 0 : deg;
+      const degFloat = finalDeg + min / 60.0;
+
+      let motion = "";
+      if (meanSpeeds[bm.key]) {
+        const dailySpeed = speedMap[bm.key] ?? 0;
+        if (dailySpeed < 0) {
+          motion = "พ.";
+        } else if (dailySpeed < meanSpeeds[bm.key] * 0.25) {
+          motion = "ม.";
+        }
+      }
+
+      const nakIdx = Math.floor(lon / (360 / 27));
+      const rishka = THAI_RISHKA[nakIdx % 9];
+      const visha = getThaiVishaStatus(finalSign, degFloat);
+      const note = `${rishka} (${NAKSHATRAS[nakIdx]})${visha ? ' • ' + visha : ''}`;
+
+      return { key: bm.key, label: bm.label, thNum: bm.thNum, sign: finalSign, deg: finalDeg, min, motion, note };
+    });
+
+    const weekday = new Date(Y, M - 1, D).getDay();
+    const lagnaSign = bodies[0].sign;
+    const titlePrefix = personName ? `${personName} • ` : "";
+    const subtitle = `${titlePrefix}${dateVal} ${timeVal} (UTC${tzVal >= 0 ? '+' + tzVal : tzVal}) • ${locName} • ลัคนา${SIGNS[lagnaSign].th} ${String(bodies[0].deg).padStart(2,'0')}°${String(bodies[0].min).padStart(2,'0')}'`;
+
+    state = {
+      name: personName,
+      subtitle,
+      birthDate: dateVal,
+      birthTime: timeVal,
+      tz: tzVal,
+      location: locName,
+      lat: latVal,
+      lon: lonVal,
+      weekday,
+      bodies
+    };
+
+    selectedMahaIdx = null;
+    selectedVimMahaIdx = null;
+    document.getElementById("chartSubtitle").textContent = state.subtitle;
+    document.getElementById("calcStatusText").textContent =
+      `Engine: Built-in JavaScript ephemeris • Ayanamsha: ${ayan.toFixed(4)}° (${ayanMode.toUpperCase()}) • ${nodeMode === 'true' ? 'True' : 'Mean'} Nodes`;
+    document.getElementById("emptyStateBanner").style.display = "none";
+    document.getElementById("workspaceContainer").style.display = "block";
+
+    renderEditor();
+    recalculateAll();
+  };
+
+  // =========================================================================
+  // 20-VARGA DIVISIONAL ENGINE (SHODASHAVARGA + D5, D6, D8, D11)
+  // =========================================================================
+  function getRasiDrishtiSigns(signIdx) {
+    const mod = signIdx % 3;
+    const result = [];
+    for (let s = 0; s < 12; s++) {
+      if (s === signIdx) continue;
+      if (mod === 0 && s % 3 === 1 && s !== mod12(signIdx + 1)) result.push(s);
+      if (mod === 1 && s % 3 === 0 && s !== mod12(signIdx - 1)) result.push(s);
+      if (mod === 2 && s % 3 === 2) result.push(s);
+    }
+    return result;
+  }
+
+  function calcVargaSign(vargaId, signIdx, degFloat) {
+    const safeDeg = clamp(degFloat, 0, 29.9999);
+    const isOdd = SIGNS[signIdx].odd;
+    const d2Mode = document.getElementById("d2ModeSelect").value;
+
+    switch (vargaId) {
+      case "D1": return signIdx;
+      case "D2": {
+        const half = safeDeg < 15 ? 0 : 1;
+        if (d2Mode === "parashari") {
+          return isOdd ? (half === 0 ? 4 : 3) : (half === 0 ? 3 : 4);
+        } else if (d2Mode === "kashinatha") {
+          const map = {
+            0: [0, 7], 1: [6, 1], 2: [2, 5], 3: [3, 4], 4: [4, 3], 5: [2, 5],
+            6: [6, 1], 7: [0, 7], 8: [8, 11], 9: [10, 9], 10: [10, 9], 11: [8, 11]
+          };
+          const pair = map[signIdx];
+          return isOdd ? pair[half] : pair[1 - half];
+        } else {
+          return mod12(signIdx * 2 + half);
+        }
+      }
+      case "D3": return mod12(signIdx + Math.floor(safeDeg / 10) * 4);
+      case "D4": return mod12(signIdx + Math.floor(safeDeg / 7.5) * 3);
+      case "D5": {
+        const part = Math.floor(safeDeg / 6);
+        const start = isOdd ? 0 : 8;
+        return mod12(start + part);
+      }
+      case "D6": {
+        const part = Math.floor(safeDeg / 5);
+        const start = isOdd ? 0 : 6;
+        return mod12(start + part);
+      }
+      case "D7": {
+        const part = Math.floor(safeDeg / (30 / 7));
+        const start = isOdd ? signIdx : mod12(signIdx + 6);
+        return mod12(start + part);
+      }
+      case "D8": {
+        const part = Math.floor(safeDeg / 3.75);
+        const mod = signIdx % 3;
+        const start = mod === 0 ? 0 : (mod === 1 ? 8 : 4);
+        return mod12(start + part);
+      }
+      case "D9": {
+        const part = Math.floor(safeDeg / (30 / 9));
+        const mod = signIdx % 3;
+        const start = mod === 0 ? signIdx : (mod === 1 ? mod12(signIdx + 8) : mod12(signIdx + 4));
+        return mod12(start + part);
+      }
+      case "D10": {
+        const part = Math.floor(safeDeg / 3);
+        const start = isOdd ? signIdx : mod12(signIdx + 8);
+        return mod12(start + part);
+      }
+      case "D11": {
+        const part = Math.floor(safeDeg / (30 / 11));
+        return mod12(0 - part);
+      }
+      case "D12": return mod12(signIdx + Math.floor(safeDeg / 2.5));
+      case "D16": {
+        const part = Math.floor(safeDeg / (30 / 16));
+        const mod = signIdx % 3;
+        const start = mod === 0 ? 0 : (mod === 1 ? 4 : 8);
+        return mod12(start + part);
+      }
+      case "D20": {
+        const part = Math.floor(safeDeg / 1.5);
+        const mod = signIdx % 3;
+        const start = mod === 0 ? 0 : (mod === 1 ? 8 : 4);
+        return mod12(start + part);
+      }
+      case "D24": {
+        const part = Math.floor(safeDeg / 1.25);
+        const start = isOdd ? 4 : 3;
+        return mod12(start + part);
+      }
+      case "D27": {
+        const part = Math.floor(safeDeg / (30 / 27));
+        const start = (signIdx % 4) * 3;
+        return mod12(start + part);
+      }
+      case "D30": {
+        if (isOdd) {
+          if (safeDeg < 5) return 0;
+          if (safeDeg < 10) return 10;
+          if (safeDeg < 18) return 8;
+          if (safeDeg < 25) return 2;
+          return 6;
+        } else {
+          if (safeDeg < 5) return 1;
+          if (safeDeg < 12) return 5;
+          if (safeDeg < 20) return 11;
+          if (safeDeg < 25) return 9;
+          return 7;
+        }
+      }
+      case "D40": {
+        const part = Math.floor(safeDeg / 0.75);
+        const start = isOdd ? 0 : 6;
+        return mod12(start + part);
+      }
+      case "D45": {
+        const part = Math.floor(safeDeg / (30 / 45));
+        const mod = signIdx % 3;
+        const start = mod === 0 ? 0 : (mod === 1 ? 4 : 8);
+        return mod12(start + part);
+      }
+      case "D60": return mod12(signIdx + Math.floor(safeDeg / 0.5));
+    }
+    return signIdx;
+  }
+
+  function getDignity(key, signIdx) {
+    if (!DIGNITIES[key]) return { label: "Ascendant (ลัคนา)", cls: "b-varg" };
+    const d = DIGNITIES[key];
+    if (d.exalt === signIdx) return { label: "Exalted (อุจจ์)", cls: "b-exalt" };
+    if (d.debil === signIdx) return { label: "Debilitated (นิจ)", cls: "b-debil" };
+    if (d.own.includes(signIdx)) return { label: "Own Sign (เกษตร)", cls: "b-own" };
+    return { label: "Neutral / Friend", cls: "" };
+  }
+
+  function getCompoundFriendship(planetKey, targetSignIdx, d1SignMap) {
+    const lordKey = SIGNS[targetSignIdx].lord;
+    if (lordKey === planetKey) return "Own";
+    const d = DIGNITIES[planetKey];
+    if (d.exalt === targetSignIdx) return "Exalted";
+    if (d.debil === targetSignIdx) return "Debilitated";
+
+    let nat = 0;
+    if (d.friends.includes(lordKey)) nat = 1;
+    else if (d.enemies.includes(lordKey)) nat = -1;
+
+    const pSign = d1SignMap[planetKey];
+    const lSign = d1SignMap[lordKey];
+    const dist = mod12(lSign - pSign) + 1;
+    const temp = [2, 3, 4, 10, 11, 12].includes(dist) ? 1 : -1;
+
+    const sum = nat + temp;
+    if (sum === 2) return "Great Friend";
+    if (sum === 1) return "Friend";
+    if (sum === 0) return "Neutral";
+    if (sum === -1) return "Enemy";
+    return "Great Enemy";
+  }
+
+  function renderChartBox(containerId, title, subtitle, lagnaSign, placements) {
+    const style = document.getElementById("chartStyleSelect").value;
+    if (style === "thai_round") {
+      renderThaiRoundWheel(containerId, title, subtitle, lagnaSign, placements);
+      return;
+    }
+
+    const gridMap = [
+      [1, 0, 11, 10],
+      [2, -1, -1, 9],
+      [3, -1, -1, 8],
+      [4, 5, 6, 7]
+    ];
+
+    let html = `<div class="south-chart">`;
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const sIdx = gridMap[r][c];
+        if (sIdx === -1) {
+          if (r === 1 && c === 1) {
+            html += `<div class="center-box"><h3>${title}</h3><p>${subtitle}</p><p class="mono" style="margin-top:4px; color:var(--accent-gold);">ลัคนา: ${SIGNS[lagnaSign].th} (${SIGNS[lagnaSign].en})</p></div>`;
+          }
+          continue;
+        }
+        const houseIdx = mod12(sIdx - lagnaSign);
+        const isLagna = sIdx === lagnaSign;
+        const here = placements.filter(p => p.sign === sIdx);
+        const tags = here.map(p => `<span class="planet-tag" style="${p.key === 'Lagna' || p.key === 'D9L' ? 'border-color:var(--accent-sage); color:var(--accent-sage);' : ''}">${p.thNum}${p.motion ? '(' + p.motion + ')' : ''}</span>`).join("");
+
+        html += `
+          <div class="rashi-cell ${isLagna ? 'lagna-cell' : ''}">
+            <div class="rashi-header">
+              <span>${SIGNS[sIdx].th}</span>
+              <span style="color:var(--accent-gold);">${THAI_BHAVAS[houseIdx]}</span>
+            </div>
+            <div class="rashi-planets">${tags}</div>
+          </div>
+        `;
+      }
+    }
+    html += `</div>`;
+    document.getElementById(containerId).innerHTML = html;
+  }
+
+  function renderThaiRoundWheel(containerId, title, subtitle, lagnaSign, placements) {
+    const cx = 250, cy = 250;
+    const rOuter = 236;
+    const rHeader = 194;
+    const rInner = 82;
+
+    function polarToXY(r, deg) {
+      const rad = (deg * Math.PI) / 180;
+      return {
+        x: cx + r * Math.cos(rad),
+        y: cy + r * Math.sin(rad)
+      };
+    }
+
+    let wedgesSvg = "";
+
+    for (let sIdx = 0; sIdx < 12; sIdx++) {
+      const centerDeg = -90 - sIdx * 30;
+      const startDeg = centerDeg - 15;
+      const endDeg = centerDeg + 15;
+
+      const p1Out = polarToXY(rOuter, startDeg);
+      const p2Out = polarToXY(rOuter, endDeg);
+      const p1Mid = polarToXY(rHeader, startDeg);
+      const p2Mid = polarToXY(rHeader, endDeg);
+      const p1In  = polarToXY(rInner, startDeg);
+      const p2In  = polarToXY(rInner, endDeg);
+
+      const isLagna = sIdx === lagnaSign;
+      const bhavaIdx = mod12(sIdx - lagnaSign);
+      const bhavaName = THAI_BHAVAS[bhavaIdx];
+
+      const outerFill = isLagna ? "#253b2e" : "#1f262d";
+      const innerFill = isLagna ? "rgba(127, 166, 138, 0.14)" : "#161a1f";
+
+      const headerPath = `
+        M ${p1Mid.x.toFixed(2)} ${p1Mid.y.toFixed(2)}
+        L ${p1Out.x.toFixed(2)} ${p1Out.y.toFixed(2)}
+        A ${rOuter} ${rOuter} 0 0 1 ${p2Out.x.toFixed(2)} ${p2Out.y.toFixed(2)}
+        L ${p2Mid.x.toFixed(2)} ${p2Mid.y.toFixed(2)}
+        A ${rHeader} ${rHeader} 0 0 0 ${p1Mid.x.toFixed(2)} ${p1Mid.y.toFixed(2)}
+        Z
+      `;
+
+      const chamberPath = `
+        M ${p1In.x.toFixed(2)} ${p1In.y.toFixed(2)}
+        L ${p1Mid.x.toFixed(2)} ${p1Mid.y.toFixed(2)}
+        A ${rHeader} ${rHeader} 0 0 1 ${p2Mid.x.toFixed(2)} ${p2Mid.y.toFixed(2)}
+        L ${p2In.x.toFixed(2)} ${p2In.y.toFixed(2)}
+        A ${rInner} ${rInner} 0 0 0 ${p1In.x.toFixed(2)} ${p1In.y.toFixed(2)}
+        Z
+      `;
+
+      wedgesSvg += `<path d="${headerPath}" fill="${outerFill}" stroke="#485663" stroke-width="1.2" />`;
+      wedgesSvg += `<path d="${chamberPath}" fill="${innerFill}" stroke="#39444f" stroke-width="1.2" />`;
+
+      const labelPos = polarToXY((rOuter + rHeader) / 2, centerDeg);
+      const signColor = isLagna ? "#9ce0b0" : "#d4a359";
+      wedgesSvg += `
+        <text x="${labelPos.x.toFixed(1)}" y="${(labelPos.y - 4).toFixed(1)}" fill="${signColor}" font-size="11.5" font-weight="700" text-anchor="middle" dominant-baseline="middle">
+          ${SIGNS[sIdx].th}
+        </text>
+        <text x="${labelPos.x.toFixed(1)}" y="${(labelPos.y + 9).toFixed(1)}" fill="#b8c4cf" font-size="9.5" text-anchor="middle" dominant-baseline="middle">
+          ${bhavaName} (${bhavaIdx + 1})
+        </text>
+      `;
+
+      const here = placements.filter(p => p.sign === sIdx);
+      if (here.length > 0) {
+        const planetPos = polarToXY((rHeader + rInner) / 2 + 4, centerDeg);
+        const tokens = here.map(p => `${p.thNum}${p.motion ? '(' + p.motion + ')' : ''}`);
+        const lines = [];
+        for (let i = 0; i < tokens.length; i += 3) {
+          lines.push(tokens.slice(i, i + 3).join(" "));
+        }
+        const lineHeight = 14;
+        const startY = planetPos.y - ((lines.length - 1) * lineHeight) / 2;
+
+        lines.forEach((lineStr, lIdx) => {
+          const hasLagna = lineStr.includes("ล") || lineStr.includes("D9L");
+          wedgesSvg += `
+            <text x="${planetPos.x.toFixed(1)}" y="${(startY + lIdx * lineHeight).toFixed(1)}"
+              fill="${hasLagna ? '#8cd19d' : '#f0f4f8'}" font-size="12.5" font-weight="700"
+              text-anchor="middle" dominant-baseline="middle">
+              ${lineStr}
+            </text>
+          `;
+        });
+      }
+    }
+
+    const centerSvg = `
+      <circle cx="${cx}" cy="${cy}" r="${rInner}" fill="#121518" stroke="#7fa68a" stroke-width="2" />
+      <circle cx="${cx}" cy="${cy}" r="${rInner - 5}" fill="none" stroke="#323b44" stroke-width="1" stroke-dasharray="3,2" />
+      <text x="${cx}" y="${cy - 22}" fill="#7fa68a" font-size="12.5" font-weight="700" text-anchor="middle">${title}</text>
+      <text x="${cx}" y="${cy - 5}" fill="#9aa5b1" font-size="9.5" text-anchor="middle">${subtitle.slice(0, 32)}</text>
+      <text x="${cx}" y="${cy + 14}" fill="#d4a359" font-size="11.5" font-weight="700" text-anchor="middle">ลัคนา: ${SIGNS[lagnaSign].th}</text>
+      <text x="${cx}" y="${cy + 30}" fill="#9aa5b1" font-size="9.5" text-anchor="middle">(${SIGNS[lagnaSign].en})</text>
+    `;
+
+    document.getElementById(containerId).innerHTML = `
+      <div class="thai-wheel-wrap">
+        <svg viewBox="0 0 500 500" width="100%" height="auto">
+          <circle cx="${cx}" cy="${cy}" r="${rOuter + 4}" fill="none" stroke="#7fa68a" stroke-width="2" />
+          ${wedgesSvg}
+          ${centerSvg}
+        </svg>
+      </div>
+    `;
+  }
+
+  function buildVargaButtons() {
+    const container = document.getElementById("vargaButtons");
+    container.innerHTML = VARGAS.map(v =>
+      `<button class="varga-pill ${v.isShodasha ? '' : 'tajika-pill'} ${v.id === activeVarga ? 'active' : ''}" onclick="selectVarga('${v.id}')">${v.name}</button>`
+    ).join("");
+  }
+
+  window.selectVarga = function(vId) {
+    activeVarga = vId;
+    buildVargaButtons();
+    if (state) recalculateAll();
+  };
+
+  function renderEditor() {
+    if (!state) return;
+    document.getElementById("weekdaySelect").value = state.weekday ?? 0;
+
+    const tbody = document.getElementById("editorTableBody");
+    tbody.innerHTML = state.bodies.map((b, idx) => {
+      const signOpts = SIGNS.map((s, sIdx) => `<option value="${sIdx}" ${b.sign === sIdx ? 'selected' : ''}>${sIdx}: ${s.th} (${s.en})</option>`).join("");
+      return `
+        <tr>
+          <td><strong>${escapeHtml(b.label)}</strong></td>
+          <td><select class="select-mini" onchange="updateBody(${idx}, 'sign', parseInt(this.value))">${signOpts}</select></td>
+          <td><input class="input-mini mono" type="number" min="0" max="29" value="${escapeHtml(b.deg)}" onchange="updateBody(${idx}, 'deg', Math.max(0, Math.min(29, parseInt(this.value)||0)))" /></td>
+          <td><input class="input-mini mono" type="number" min="0" max="59" value="${escapeHtml(b.min)}" onchange="updateBody(${idx}, 'min', Math.max(0, Math.min(59, parseInt(this.value)||0)))" /></td>
+          <td><input class="input-mini" type="text" value="${escapeHtml(b.motion)}" placeholder="พ./ม./R" onchange="updateBody(${idx}, 'motion', this.value)" /></td>
+          <td><input type="text" style="width:100%;" value="${escapeHtml(b.note)}" onchange="updateBody(${idx}, 'note', this.value)" /></td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  window.updateBody = function(idx, field, val) {
+    if (!state) return;
+    state.bodies[idx][field] = val;
+    renderEditor();
+  };
+
+  window.recalculateAll = function() {
+    if (!state) return;
+    state.weekday = parseInt(document.getElementById("weekdaySelect").value, 10);
+    const vObj = VARGAS.find(v => v.id === activeVarga);
+    document.getElementById("vargaDomainLabel").textContent = vObj.desc;
+    document.getElementById("activeVargaColHeader").textContent = `${activeVarga} Sign`;
+
+    const computed = state.bodies.map(b => {
+      const degFloat = clamp(b.deg + b.min / 60, 0, 29.9999);
+      const vargaSigns = {};
+      VARGAS.forEach(v => {
+        vargaSigns[v.id] = calcVargaSign(v.id, b.sign, degFloat);
+      });
+      return {
+        ...b, degFloat, vargaSigns,
+        label: escapeHtml(b.label),
+        thNum: escapeHtml(b.thNum),
+        motion: escapeHtml(b.motion),
+        note: escapeHtml(b.note)
+      };
+    });
+
+    const lagnaVargaSign = computed[0].vargaSigns[activeVarga];
+    const placements = computed.map(c => ({
+      key: c.key, thNum: c.thNum, motion: c.motion, sign: c.vargaSigns[activeVarga]
+    }));
+    renderChartBox("singleChartHost", vObj.name.split(" ")[0], `30° ÷ ${activeVarga.replace('D','')}`, lagnaVargaSign, placements);
+
+    document.getElementById("vargaTableBody").innerHTML = computed.map(c => {
+      const sIdx = c.vargaSigns[activeVarga];
+      const houseIdx = mod12(sIdx - lagnaVargaSign);
+      const dig = getDignity(c.key, sIdx);
+      const isVarg = c.vargaSigns.D1 === c.vargaSigns.D9 && activeVarga !== "D1";
+      const aspectSigns = getRasiDrishtiSigns(sIdx);
+      const aspectingBodies = computed
+        .filter(other => other.key !== "Lagna" && aspectSigns.includes(other.vargaSigns[activeVarga]))
+        .map(o => o.thNum).join(",");
+
+      return `
+        <tr>
+          <td><strong>${c.label}</strong> ${c.motion ? `<span class="mono">(${c.motion})</span>` : ''}</td>
+          <td class="mono">${SIGNS[c.sign].th} ${String(c.deg).padStart(2,'0')}°${String(c.min).padStart(2,'0')}'</td>
+          <td><strong>${SIGNS[sIdx].th}</strong> (${SIGNS[sIdx].en})</td>
+          <td class="mono">${THAI_BHAVAS[houseIdx]} (H${houseIdx + 1})</td>
+          <td>
+            ${dig.cls ? `<span class="badge ${dig.cls}">${dig.label}</span>` : dig.label}
+            ${isVarg ? `<span class="badge b-varg">Vargottama</span>` : ''}
+            <div style="font-size:0.74rem; color:var(--text-secondary);">Rasi Drishti from: ${aspectingBodies || 'None'}</div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    ["D1", "D9", "D10", "D24"].forEach(vId => {
+      const meta = VARGAS.find(v => v.id === vId);
+      const lSign = computed[0].vargaSigns[vId];
+      const pl = computed.map(c => ({ key: c.key, thNum: c.thNum, motion: c.motion, sign: c.vargaSigns[vId] }));
+      renderChartBox(`grid${vId}Host`, meta.name.split(" ")[0], meta.desc.split("—")[1].trim(), lSign, pl);
+    });
+
+    runJaiminiAnalysis(computed);
+    runVimshottariAnalysis(computed);
+    runStrengthAndThaiAnalysis(computed);
+  };
+
+  function runJaiminiAnalysis(computed) {
+    const kMode = parseInt(document.getElementById("karakaModeSelect").value, 10);
+    const eligibleKeys = kMode === 7
+      ? ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]
+      : ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu"];
+
+    const karakaNames = kMode === 7
+      ? ["Atmakaraka (AK)", "Amatyakaraka (AmK)", "Bhatrikaraka (BK)", "Matrikaraka (MK)", "Putrakaraka (PK)", "Gnatikaraka (GK)", "Darakaraka (DK)"]
+      : ["Atmakaraka (AK)", "Amatyakaraka (AmK)", "Bhatrikaraka (BK)", "Matrikaraka (MK)", "PiK (Pitri)", "Putrakaraka (PK)", "Gnatikaraka (GK)", "Darakaraka (DK)"];
+
+    const ranked = computed
+      .filter(c => eligibleKeys.includes(c.key))
+      .map(c => {
+        const arc = c.key === "Rahu" ? (30 - c.degFloat) : c.degFloat;
+        return { ...c, arc };
+      })
+      .sort((a, b) => b.arc - a.arc);
+
+    const ak = ranked[0];
+    const klSign = ak.vargaSigns.D9;
+    const d1Lagna = computed[0].vargaSigns.D1;
+
+    document.getElementById("klBadge").textContent = `KL: ${SIGNS[klSign].th} (${SIGNS[klSign].en})`;
+
+    document.getElementById("karakaTableBody").innerHTML = ranked.map((r, i) => {
+      const hD1 = mod12(r.vargaSigns.D1 - d1Lagna);
+      const hKL = mod12(r.vargaSigns.D9 - klSign);
+      const d = Math.floor(r.arc);
+      const m = Math.round((r.arc - d) * 60);
+      return `
+        <tr>
+          <td><strong>${karakaNames[i]}</strong></td>
+          <td>${r.label}</td>
+          <td class="mono">${String(d).padStart(2,'0')}°${String(m).padStart(2,'0')}' ${r.key === 'Rahu' ? '(rev)' : ''}</td>
+          <td>${SIGNS[r.vargaSigns.D1].th} (${THAI_BHAVAS[hD1]})</td>
+          <td><strong>${SIGNS[r.vargaSigns.D9].th}</strong> (${THAI_BHAVAS[hKL]})</td>
+        </tr>
+      `;
+    }).join("");
+
+    const klPlacements = computed.map(c => ({
+      key: c.key === "Lagna" ? "D9L" : c.key,
+      thNum: c.key === "Lagna" ? "D9L" : c.thNum,
+      motion: c.motion,
+      sign: c.vargaSigns.D9
+    }));
+    renderChartBox("karakamshaChartHost", "KARAKAMSHA", `AK: ${ak.thNum} • Swamsha: ${SIGNS[computed[0].vargaSigns.D9].th}`, klSign, klPlacements);
+
+    const d1Map = {};
+    computed.forEach(c => { d1Map[c.key] = c.vargaSigns.D1; });
+
+    function resolveStrongerLord(signIdx, lordA, lordB) {
+      const sA = d1Map[lordA], sB = d1Map[lordB];
+      if (sA === signIdx && sB !== signIdx) return { winner: lordB, reason: `${lordA} occupies own sign ${SIGNS[signIdx].en}; ${lordB} rules` };
+      if (sB === signIdx && sA !== signIdx) return { winner: lordA, reason: `${lordB} occupies own sign ${SIGNS[signIdx].en}; ${lordA} rules` };
+      const conjA = computed.filter(c => c.key !== "Lagna" && c.key !== lordA && c.vargaSigns.D1 === sA).length;
+      const conjB = computed.filter(c => c.key !== "Lagna" && c.key !== lordB && c.vargaSigns.D1 === sB).length;
+      if (conjA !== conjB) {
+        const w = conjA > conjB ? lordA : lordB;
+        return { winner: w, reason: `${w} has more conjunctions (${Math.max(conjA, conjB)} vs ${Math.min(conjA, conjB)})` };
+      }
+      const digA = (DIGNITIES[lordA].exalt === sA || DIGNITIES[lordA].own.includes(sA)) ? 1 : 0;
+      const digB = (DIGNITIES[lordB].exalt === sB || DIGNITIES[lordB].own.includes(sB)) ? 1 : 0;
+      if (digA !== digB) {
+        const w = digA > digB ? lordA : lordB;
+        return { winner: w, reason: `${w} holds higher dignity` };
+      }
+      const degA = computed.find(c => c.key === lordA).degFloat;
+      const degB = computed.find(c => c.key === lordB).degFloat;
+      const w = degA >= degB ? lordA : lordB;
+      return { winner: w, reason: `${w} has greater degree arc (${Math.max(degA, degB).toFixed(2)}°)` };
+    }
+
+    const scLord = resolveStrongerLord(7, "Mars", "Ketu");
+    const aqLord = resolveStrongerLord(10, "Saturn", "Rahu");
+    document.getElementById("dualLordLog").innerHTML =
+      `<strong>Jaimini Dual-Lord Arbitration:</strong> พิจิก (Scorpio) &rarr; <strong>${scLord.winner}</strong> (${scLord.reason}) &nbsp;|&nbsp; กุมภ์ (Aquarius) &rarr; <strong>${aqLord.winner}</strong> (${aqLord.reason})`;
+
+    function getEffectiveLord(signIdx) {
+      if (signIdx === 7) return scLord.winner;
+      if (signIdx === 10) return aqLord.winner;
+      return SIGNS[signIdx].lord;
+    }
+
+    function calcPada(houseIdx) {
+      const targetSign = mod12(d1Lagna + houseIdx);
+      const lordName = getEffectiveLord(targetSign);
+      const lordSign = d1Map[lordName];
+      const dist = mod12(lordSign - targetSign);
+      let padaSign = mod12(lordSign + dist);
+      if (padaSign === targetSign || mod12(padaSign - targetSign) === 6) {
+        padaSign = mod12(padaSign + 9);
+      }
+      return padaSign;
+    }
+
+    const padas = [
+      { code: "AL (Arudha Lagna)", domain: "Public Image & Status", sign: calcPada(0) },
+      { code: "A2 (Dhana Pada)", domain: "Liquid Capital & Resources", sign: calcPada(1) },
+      { code: "A5 (Mantra Pada)", domain: "Intellect, Models & Speculation", sign: calcPada(4) },
+      { code: "A7 (Dara Pada)", domain: "Partnerships & Counterparties", sign: calcPada(6) },
+      { code: "A9 (Bhagya Pada)", domain: "Dharma, Research & Mentors", sign: calcPada(8) },
+      { code: "A10 (Rajya Pada)", domain: "Career & Visible Work", sign: calcPada(9) },
+      { code: "A11 (Labha Pada)", domain: "Gains & Realization", sign: calcPada(10) },
+      { code: "UL (Upapada Lagna)", domain: "Marriage & Duty Commitments", sign: calcPada(11) }
+    ];
+
+    document.getElementById("arudhaTableBody").innerHTML = padas.map(p => {
+      const hIdx = mod12(p.sign - d1Lagna);
+      const occ = computed.filter(c => c.key !== "Lagna" && c.vargaSigns.D1 === p.sign).map(c => c.thNum).join(", ") || "Empty";
+      const drishtiSigns = getRasiDrishtiSigns(p.sign);
+      const drishtiPlanets = computed
+        .filter(c => c.key !== "Lagna" && drishtiSigns.includes(c.vargaSigns.D1))
+        .map(c => `${c.thNum}(${SIGNS[c.vargaSigns.D1].th})`).join(", ") || "None";
+      return `
+        <tr>
+          <td><strong>${p.code}</strong></td>
+          <td>${p.domain}</td>
+          <td><strong>${SIGNS[p.sign].th}</strong> (${THAI_BHAVAS[hIdx]})</td>
+          <td class="mono">Occ: ${occ}<br><span style="color:var(--text-secondary); font-size:0.74rem;">Rasi Drishti: ${drishtiPlanets}</span></td>
+        </tr>
+      `;
+    }).join("");
+
+    const ninthFromLagna = mod12(d1Lagna + 8);
+    const isDirect = [0, 1, 2, 6, 7, 8].includes(ninthFromLagna);
+    document.getElementById("dashaRuleBadge").textContent =
+      `ศุภะ (9th): ${SIGNS[ninthFromLagna].th} (${isDirect ? 'Direct / Savya' : 'Reverse / Apasavya'})`;
+
+    const birthDateObj = new Date(state.birthDate);
+    let cursorMs = birthDateObj.getTime();
+    const MS_PER_YEAR = 365.2425 * 24 * 3600 * 1000;
+    const nowMs = Date.now();
+
+    cachedCharaPeriods = [];
+    for (let i = 0; i < 12; i++) {
+      const sIdx = isDirect ? mod12(d1Lagna + i) : mod12(d1Lagna - i);
+      const lordName = getEffectiveLord(sIdx);
+      const lordSign = d1Map[lordName];
+      const signIsSavya = [0, 1, 2, 6, 7, 8].includes(sIdx);
+      let years = signIsSavya ? mod12(lordSign - sIdx) : mod12(sIdx - lordSign);
+      if (years === 0) years = 12;
+      if (DIGNITIES[lordName].exalt === lordSign) years = Math.min(12, years + 1);
+      if (DIGNITIES[lordName].debil === lordSign) years = Math.max(1, years - 1);
+
+      const startMs = cursorMs;
+      const endMs = cursorMs + years * MS_PER_YEAR;
+      cursorMs = endMs;
+
+      const adDirect = [0, 1, 2, 6, 7, 8].includes(sIdx);
+      const subMs = (years * MS_PER_YEAR) / 12;
+      const antardashas = [];
+      for (let j = 1; j <= 12; j++) {
+        const adSign = adDirect ? mod12(sIdx + j) : mod12(sIdx - j);
+        antardashas.push({
+          sign: adSign,
+          startMs: startMs + (j - 1) * subMs,
+          endMs: startMs + j * subMs,
+          months: years
+        });
+      }
+
+      cachedCharaPeriods.push({
+        idx: i, sIdx, lordName, years, startMs, endMs, antardashas
+      });
+    }
+
+    if (selectedMahaIdx === null) {
+      const active = cachedCharaPeriods.find(p => nowMs >= p.startMs && nowMs < p.endMs);
+      selectedMahaIdx = active ? active.idx : 0;
+    }
+
+    document.getElementById("charaDashaBody").innerHTML = cachedCharaPeriods.map(p => {
+      const isCurrent = nowMs >= p.startMs && nowMs < p.endMs;
+      const isSelected = p.idx === selectedMahaIdx;
+      const sYear = new Date(p.startMs).getFullYear();
+      const eYear = new Date(p.endMs).getFullYear();
+      const occ = computed.filter(c => c.key !== "Lagna" && c.vargaSigns.D1 === p.sIdx).map(c => c.thNum).join(" ") || "—";
+      const hIdx = mod12(p.sIdx - d1Lagna);
+
+      return `
+        <tr class="clickable-row ${isSelected ? 'selected-dasha' : ''}" onclick="selectMahaDasha(${p.idx})">
+          <td><strong>${SIGNS[p.sIdx].th} (${SIGNS[p.sIdx].en})</strong> ${isCurrent ? '<span class="badge b-exalt">Active</span>' : ''}</td>
+          <td class="mono">${THAI_BHAVAS[hIdx]}</td>
+          <td>${p.lordName}</td>
+          <td class="mono">${p.years}y</td>
+          <td class="mono">${sYear}–${eYear}</td>
+          <td class="mono">${occ}</td>
+        </tr>
+      `;
+    }).join("");
+
+    renderAntardashas(computed, d1Lagna, nowMs);
+  }
+
+  window.selectMahaDasha = function(idx) {
+    selectedMahaIdx = idx;
+    recalculateAll();
+  };
+
+  function renderAntardashas(computed, d1Lagna, nowMs) {
+    const maha = cachedCharaPeriods[selectedMahaIdx];
+    if (!maha) return;
+    document.getElementById("antardashaTitle").textContent =
+      `Jaimini Chara Antardashas for ราศี${SIGNS[maha.sIdx].th} (${SIGNS[maha.sIdx].en}) (${maha.years} yrs • ${maha.months} mos each)`;
+
+    document.getElementById("antardashaBody").innerHTML = maha.antardashas.map(ad => {
+      const isNow = nowMs >= ad.startMs && nowMs < ad.endMs;
+      const sStr = new Date(ad.startMs).toISOString().slice(0, 7);
+      const eStr = new Date(ad.endMs).toISOString().slice(0, 7);
+      const occ = computed.filter(c => c.key !== "Lagna" && c.vargaSigns.D1 === ad.sign).map(c => c.thNum).join(" ") || "—";
+      const hIdx = mod12(ad.sign - d1Lagna);
+      return `
+        <tr style="${isNow ? 'background:rgba(127,166,138,0.2);' : ''}">
+          <td><strong>${SIGNS[ad.sign].th} (${SIGNS[ad.sign].en})</strong> ${isNow ? '<span class="badge b-exalt">Current</span>' : ''}</td>
+          <td class="mono">${THAI_BHAVAS[hIdx]}</td>
+          <td class="mono">${ad.months} mos</td>
+          <td class="mono">${sStr} to ${eStr}</td>
+          <td class="mono">${occ}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // =========================================================================
+  // VIMSHOTTARI DASHA (120-YEAR CYCLE + BHUKTIS)
+  // =========================================================================
+  function runVimshottariAnalysis(computed) {
+    const moon = computed.find(c => c.key === "Moon");
+    const d1Lagna = computed[0].vargaSigns.D1;
+    const moonTotalDeg = moon.sign * 30 + moon.degFloat;
+    const nakSpan = 360 / 27;
+    const nakIdx = Math.floor(moonTotalDeg / nakSpan);
+    const pada = Math.floor((moonTotalDeg % nakSpan) / (nakSpan / 4)) + 1;
+    const degElapsedInNak = moonTotalDeg - nakIdx * nakSpan;
+    const fracRemaining = clamp(1 - (degElapsedInNak / nakSpan), 0, 1);
+
+    const startLordIdx = nakIdx % 9;
+    const startLord = VIM_ORDER[startLordIdx];
+    const balanceYears = startLord.years * fracRemaining;
+
+    document.getElementById("vimBalanceBadge").textContent =
+      `Moon: ${NAKSHATRAS[nakIdx]} P${pada} (${startLord.key} Bal: ${balanceYears.toFixed(2)}y)`;
+
+    const birthDateObj = new Date(state.birthDate);
+    const MS_PER_YEAR = 365.2425 * 24 * 3600 * 1000;
+    const nowMs = Date.now();
+
+    cachedVimPeriods = [];
+    let cursorMs = birthDateObj.getTime();
+
+    for (let step = 0; step < 10; step++) {
+      const lordIdx = (startLordIdx + step) % 9;
+      const lordObj = VIM_ORDER[lordIdx];
+      const fullYears = lordObj.years;
+      const actualYears = step === 0 ? balanceYears : fullYears;
+
+      const endMs = cursorMs + actualYears * MS_PER_YEAR;
+      const fullStartMs = endMs - fullYears * MS_PER_YEAR;
+
+      const bhuktis = [];
+      let bCursorMs = fullStartMs;
+      for (let bStep = 0; bStep < 9; bStep++) {
+        const bLordIdx = (lordIdx + bStep) % 9;
+        const bLordObj = VIM_ORDER[bLordIdx];
+        const bYears = (fullYears * bLordObj.years) / 120.0;
+        const bEndMs = bCursorMs + bYears * MS_PER_YEAR;
+
+        if (bEndMs > birthDateObj.getTime() + 86400000) {
+          bhuktis.push({
+            lord: bLordObj,
+            years: bYears,
+            startMs: Math.max(bCursorMs, birthDateObj.getTime()),
+            endMs: bEndMs
+          });
+        }
+        bCursorMs = bEndMs;
+      }
+
+      cachedVimPeriods.push({
+        idx: step,
+        lord: lordObj,
+        actualYears,
+        fullYears,
+        startMs: cursorMs,
+        endMs,
+        bhuktis
+      });
+
+      cursorMs = endMs;
+    }
+
+    if (selectedVimMahaIdx === null) {
+      const activeIdx = cachedVimPeriods.findIndex(p => nowMs >= p.startMs && nowMs < p.endMs);
+      selectedVimMahaIdx = activeIdx >= 0 ? activeIdx : 0;
+    }
+
+    document.getElementById("vimMahaBody").innerHTML = cachedVimPeriods.map(p => {
+      const isCurrent = nowMs >= p.startMs && nowMs < p.endMs;
+      const isSelected = p.idx === selectedVimMahaIdx;
+      const gObj = computed.find(c => c.key === p.lord.key);
+      const hIdx = mod12(gObj.vargaSigns.D1 - d1Lagna);
+      const sDate = new Date(p.startMs).toISOString().slice(0, 10);
+      const eDate = new Date(p.endMs).toISOString().slice(0, 10);
+
+      return `
+        <tr class="clickable-row ${isSelected ? 'selected-dasha' : ''}" onclick="selectVimMaha(${p.idx})">
+          <td><strong>${p.lord.label}</strong> ${isCurrent ? '<span class="badge b-exalt">Active</span>' : ''}</td>
+          <td>${SIGNS[gObj.vargaSigns.D1].th} (${THAI_BHAVAS[hIdx]})</td>
+          <td class="mono">${p.actualYears.toFixed(2)}y${p.idx === 0 ? ' (bal)' : ''}</td>
+          <td class="mono">${sDate}</td>
+          <td class="mono">${eDate}</td>
+        </tr>
+      `;
+    }).join("");
+
+    renderVimBhuktis(computed, d1Lagna, nowMs);
+  }
+
+  window.selectVimMaha = function(idx) {
+    selectedVimMahaIdx = idx;
+    recalculateAll();
+  };
+
+  function renderVimBhuktis(computed, d1Lagna, nowMs) {
+    const maha = cachedVimPeriods[selectedVimMahaIdx];
+    if (!maha) return;
+
+    document.getElementById("vimBhuktiTitle").textContent =
+      `Vimshottari Bhuktis for ${maha.lord.label} Mahadasha`;
+
+    document.getElementById("vimBhuktiBody").innerHTML = maha.bhuktis.map(b => {
+      const isNow = nowMs >= b.startMs && nowMs < b.endMs;
+      const gObj = computed.find(c => c.key === b.lord.key);
+      const hIdx = mod12(gObj.vargaSigns.D1 - d1Lagna);
+      const sDate = new Date(b.startMs).toISOString().slice(0, 10);
+      const eDate = new Date(b.endMs).toISOString().slice(0, 10);
+      const months = (b.years * 12).toFixed(1);
+
+      return `
+        <tr style="${isNow ? 'background:rgba(127,166,138,0.2);' : ''}">
+          <td><strong>${maha.lord.key} / ${b.lord.label}</strong> ${isNow ? '<span class="badge b-exalt">Current</span>' : ''}</td>
+          <td>${SIGNS[gObj.vargaSigns.D1].th} (${THAI_BHAVAS[hIdx]})</td>
+          <td class="mono">${months} mos</td>
+          <td class="mono">${sDate}</td>
+          <td class="mono">${eDate}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // =========================================================================
+  // VARGA VISHWA (16-CHART WEIGHTED + 20-CHART COUNT) & THAI DIAGNOSTICS
+  // =========================================================================
+  function runStrengthAndThaiAnalysis(computed) {
+    const d1Map = {};
+    computed.forEach(c => { d1Map[c.key] = c.vargaSigns.D1; });
+
+    const multMap = {
+      "Exalted": 1.0,
+      "Own": 0.75,
+      "Great Friend": 0.75,
+      "Friend": 0.5,
+      "Neutral": 0.375,
+      "Enemy": 0.1875,
+      "Great Enemy": 0.09375,
+      "Debilitated": 0.0
+    };
+
+    const grahas = computed.filter(c => c.key !== "Lagna");
+    document.getElementById("vishwaTableBody").innerHTML = grahas.map(g => {
+      let ownExalt16 = 0;
+      let ownExalt20 = 0;
+      let vishwaScore = 0;
+
+      VARGAS.forEach(v => {
+        const s = g.vargaSigns[v.id];
+        const rel = getCompoundFriendship(g.key, s, d1Map);
+        const isStrong = (rel === "Exalted" || rel === "Own");
+        if (isStrong) {
+          ownExalt20++;
+          if (v.isShodasha) ownExalt16++;
+        }
+        if (v.isShodasha && v.weight > 0) {
+          vishwaScore += v.weight * (multMap[rel] ?? 0.375);
+        }
+      });
+
+      const isVarg = g.vargaSigns.D1 === g.vargaSigns.D9;
+      const d9Dig = getDignity(g.key, g.vargaSigns.D9);
+      const d60Dig = getDignity(g.key, g.vargaSigns.D60);
+
+      return `
+        <tr>
+          <td><strong>${g.label}</strong></td>
+          <td class="mono">${ownExalt16}/16 &nbsp;(${ownExalt20}/20)</td>
+          <td class="mono"><strong>${vishwaScore.toFixed(2)}</strong> / 20.00</td>
+          <td>${isVarg ? '<span class="badge b-varg">Yes (D1=D9)</span>' : 'No'}</td>
+          <td>D9: ${SIGNS[g.vargaSigns.D9].th} ${d9Dig.cls ? `(${d9Dig.label.split(' ')[0]})` : ''} • D60: ${SIGNS[g.vargaSigns.D60].th}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const weekday = parseInt(document.getElementById("weekdaySelect").value, 10);
+    const taksaWheel = ["Sun", "Moon", "Mars", "Mercury", "Saturn", "Jupiter", "Rahu", "Venus"];
+    const startMap = { 0: 0, 1: 1, 2: 2, 3: 3, 6: 4, 4: 5, 5: 7 };
+    const taksaRoles = [
+      "บริวาร (Output/Students)",
+      "อายุ (Vitality)",
+      "เดช (Power/Authority)",
+      "ศรี (Wealth/Fortune)",
+      "มูละ (Foundation/Assets)",
+      "อุตสาหะ (Work/Effort)",
+      "มนตรี (Mentors/Support)",
+      "กาลกิณี (Affliction/Risk)"
+    ];
+
+    const startIdx = startMap[weekday];
+    const roleByGraha = {};
+    for (let i = 0; i < 8; i++) {
+      roleByGraha[taksaWheel[(startIdx + i) % 8]] = taksaRoles[i];
+    }
+    roleByGraha["Ketu"] = "เกตุ (โมกษะ/วิญญาณ)";
+
+    document.getElementById("thaiTableBody").innerHTML = computed.map(c => {
+      const totalDeg = c.sign * 30 + c.degFloat;
+      const nakIdx = Math.floor(totalDeg / (360 / 27));
+      const pada = Math.floor((totalDeg % (360 / 27)) / (360 / 108)) + 1;
+      const role = roleByGraha[c.key] || "Lagna";
+      const hasVisha = c.note.includes("พิษ");
+      return `
+        <tr>
+          <td><strong>${c.label}</strong></td>
+          <td>${role}</td>
+          <td class="mono">${NAKSHATRAS[nakIdx]} (Pada ${pada})</td>
+          <td>${hasVisha ? `<span class="badge b-visha">${c.note}</span>` : c.note}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  window.switchTab = function(panelId, btn) {
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById(panelId).classList.add("active");
+    btn.classList.add("active");
+  };
+
+  window.exportJSON = function() {
+    if (!state) {
+      alert("Calculate a chart first before exporting.");
+      return;
+    }
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fun-hora-${state.birthDate || 'chart'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  window.importJSON = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const parsed = JSON.parse(e.target.result);
+        if (parsed && Array.isArray(parsed.bodies)) {
+          state = parsed;
+          selectedMahaIdx = null;
+          selectedVimMahaIdx = null;
+          document.getElementById("inName").value = state.name || "";
+          document.getElementById("inDate").value = state.birthDate || "";
+          document.getElementById("inTime").value = state.birthTime || "";
+          document.getElementById("inTz").value = state.tz ?? 7;
+          document.getElementById("inLocation").value = state.location || "";
+          document.getElementById("inLat").value = state.lat ?? "";
+          document.getElementById("inLon").value = state.lon ?? "";
+          document.getElementById("chartSubtitle").textContent = state.subtitle;
+          document.getElementById("emptyStateBanner").style.display = "none";
+          document.getElementById("workspaceContainer").style.display = "block";
+          renderEditor();
+          recalculateAll();
+        }
+      } catch (err) {
+        alert("Invalid JSON chart file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Initialize empty state
+  buildVargaButtons();
+  for (const id of ["ayanamshaSelect", "nodeModeSelect"]) {
+    document.getElementById(id).addEventListener("change", () => {
+      if (state) window.calculateFromBirthInput();
+    });
+  }
+</script>
+</body>
+</html>
