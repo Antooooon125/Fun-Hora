@@ -6,7 +6,8 @@ use wasm_bindgen::prelude::*;
 
 use xalen_ayanamsa::Ayanamsa;
 use xalen_coords::obliquity::mean_obliquity;
-use xalen_ephem::{Almanac, Body};
+use xalen_ephem::rise_set::next_horizon_crossing;
+use xalen_ephem::{Almanac, Body, HorizonCrossing};
 use xalen_houses::{GeoLocation, HouseSystem, compute_houses};
 use xalen_time::{DeltaTModel, JdUT1, JulianDay, delta_t};
 use xalen_vedic::compatibility::ashtakoota_match;
@@ -274,6 +275,35 @@ impl XalenWasm {
 
         let panchang = compute_panchang(sun_deg, moon_deg, jd_ut1);
         serde_json::to_string(&panchang).map_err(|e| e.to_string())
+    }
+
+    /// Most recent standard apparent sunrise within 1.2 days of the requested instant.
+    /// Returns no value when the Sun did not rise in that window.
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "precedingSunrise"))]
+    pub fn preceding_sunrise(&self, jd_ut1: f64, lat: f64, lon: f64) -> Result<Option<f64>, String> {
+        check_geo(jd_ut1, lat, lon)?;
+        let find_rise = |start| {
+            next_horizon_crossing(
+                &self.almanac,
+                Body::Sun,
+                JdUT1(start),
+                lat,
+                lon,
+                0.0,
+                true,
+                &HorizonCrossing::default(),
+            )
+            .map(|rise| rise.map(|t| t.as_f64()))
+            .map_err(|error| error.to_string())
+        };
+        let Some(first) = find_rise(jd_ut1 - 1.2)?.filter(|rise| *rise <= jd_ut1) else {
+            return Ok(None);
+        };
+        // Restart beyond the refinement tolerance to catch a second rise in the window.
+        let most_recent = find_rise(first + 1.0 / 86_400.0)?
+            .filter(|rise| *rise <= jd_ut1)
+            .unwrap_or(first);
+        Ok(Some(most_recent))
     }
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "housesJson"))]

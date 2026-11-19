@@ -504,6 +504,11 @@
 
 <!-- MAIN ANALYTICAL WORKSPACE -->
 <div id="workspaceContainer" style="display:none;">
+  <section id="specialLagnas" class="card" aria-labelledby="specialLagnasTitle" hidden>
+    <h2 id="specialLagnasTitle">Special Lagnas</h2>
+    <p id="specialLagnasPositions"></p>
+    <p id="specialLagnasSunrise"></p>
+  </section>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('tab-vargas', this)">1. Divisional Charts (All 20 D-Charts)</button>
     <button class="tab-btn" onclick="switchTab('tab-grid', this)">2. Core 4-Chart Grid (D1 • D9 • D10 • D24)</button>
@@ -771,6 +776,25 @@
   function readSettings() {
     return Object.fromEntries(Object.entries(settingControls).map(([key, id]) =>
       [key, document.getElementById(id).value]));
+  }
+
+  function renderSpecialLagnas() {
+    const section = document.getElementById("specialLagnas");
+    const lagnas = state?.specialLagnas;
+    section.hidden = lagnas === undefined;
+    const positions = document.getElementById("specialLagnasPositions");
+    const sunrise = document.getElementById("specialLagnasSunrise");
+    if (!lagnas || ![lagnas.hora, lagnas.ghati].every(value => Number.isFinite(value) && value >= 0 && value < 360)) {
+      positions.textContent = "HL and GL unavailable for this chart.";
+      sunrise.textContent = "";
+      return;
+    }
+    const format = longitude => {
+      const {sign, deg, min} = longitudeParts(longitude);
+      return SIGNS[sign].en + " " + deg + "°" + String(min).padStart(2, "0") + "′";
+    };
+    positions.textContent = "Hora Lagna (HL) · " + format(lagnas.hora) + " | Ghati Lagna (GL) · " + format(lagnas.ghati);
+    sunrise.textContent = "Reference sunrise (UTC) · " + lagnas.sunriseUtc.replace("T", " ").replace(".000Z", "");
   }
 
   function renderChartSettings() {
@@ -1053,7 +1077,7 @@
       engineStatus.textContent = "XALEN could not calculate these birth details.";
       return;
     }
-    const { ayan, siderealMap, speedMap } = ephemeris;
+    const { ayan, siderealMap, speedMap, specialLagnas } = ephemeris;
 
     const bodyMeta = [
       { key: "Lagna",   label: "Lagna (ล)",   thNum: "ล" },
@@ -1106,6 +1130,7 @@
       lon: lonVal,
       weekday,
       schemaVersion: 2,
+      specialLagnas,
       settings: { ...settings, ayan, utc, timeZone: zone, appVersion: APP_VERSION, engineVersion: ENGINE_VERSION },
       bodies
     };
@@ -1489,6 +1514,7 @@
       Object.assign(state.settings, {chartStyle, d2Mode, karakaMode});
     }
     renderChartSettings();
+    renderSpecialLagnas();
     const vObj = VARGAS.find(v => v.id === activeVarga);
     document.getElementById("vargaDomainLabel").textContent = vObj.desc;
     document.getElementById("activeVargaColHeader").textContent = `${activeVarga} Sign`;

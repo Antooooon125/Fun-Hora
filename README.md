@@ -10,6 +10,10 @@ Fun-Hora is a browser-based Jyotish chart workbench with Thai round and square c
 - City presets select a historical IANA time zone. You can also enter a zone or use a manual UTC offset. When a local time repeats, Fun-Hora shows both candidate offsets.
 - Chart settings show the resolved UTC instant and calculation choices. JSON saves preserve those settings, and an invalid import leaves the open chart in place.
 
+## Special Lagnas
+
+The **Special Lagnas** section shows Hora Lagna (HL) and Ghati Lagna (GL). Both start at the sidereal Sun's longitude at the most recent sunrise, using the selected ayanamsa. HL advances one sign per 60 minutes and GL advances one sign per 24 minutes. A pre-sunrise birth uses the previous sunrise. Fun-Hora uses XALEN's standard apparent sunrise at sea level and reports when no sunrise is available in the search window. [Brihat Parashara Hora Shastra, chapter 5](https://www.siva.sh/brihat-parashara-hora-shastra/5/1-10)
+
 ## How Fun-Hora uses XALEN
 
 Fun-Hora is the Jyotish chart app. XALEN Ephemeris is the reusable calculation library behind it. Fun-Hora runs XALEN in your browser to calculate planetary positions and speeds, the ascendant, and ayanamsa. Fun-Hora then applies its chart rules to those values.

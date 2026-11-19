@@ -84,6 +84,11 @@ export function validateChart(chart) {
     return body;
   });
 
+  const lagnas = chart.specialLagnas;
+  if (lagnas !== undefined && lagnas !== null &&
+      (![lagnas.hora, lagnas.ghati].every(value => Number.isFinite(value) && value >= 0 && value < 360) ||
+       typeof lagnas.sunriseUtc !== 'string' || !Number.isFinite(Date.parse(lagnas.sunriseUtc)))) fail();
+
   let settings;
   if (chart.settings !== undefined) {
     settings = chart.settings;

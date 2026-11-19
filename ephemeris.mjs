@@ -32,6 +32,17 @@ export async function loadEphemeris(moduleOptions) {
       speedMap[body] = position.lon_speed;
     }
     siderealMap.Ketu = normalizeDegrees(siderealMap.Rahu + 180);
-    return { ayan, siderealMap, speedMap };
+    const sunrise = engine.precedingSunrise(jd, lat, lon);
+    let specialLagnas = null;
+    if (Number.isFinite(sunrise)) {
+      const sunriseSun = engine.siderealLongitude(sunrise, PLANET_IDS.Sun, ayanId) - adjustment;
+      const elapsedHours = (jd - sunrise) * 24;
+      specialLagnas = {
+        hora: normalizeDegrees(sunriseSun + elapsedHours * 30),
+        ghati: normalizeDegrees(sunriseSun + elapsedHours * 75),
+        sunriseUtc: new Date(Math.round((sunrise - 2440587.5) * 86400) * 1000).toISOString(),
+      };
+    }
+    return { ayan, siderealMap, speedMap, specialLagnas };
   };
 }
