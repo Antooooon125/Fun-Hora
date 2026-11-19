@@ -23,10 +23,22 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Stage the standalone web app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build XALEN from the fork
         run: |
-          mkdir -p site
-          cp index.html site/
+          rustup target add wasm32-unknown-unknown
+          cargo build --locked --release --target wasm32-unknown-unknown -p xalen-wasm
+      - name: Generate version-matched browser bindings
+        run: |
+          bindgen_version=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/"/,"",$3); print $3; exit}' Cargo.lock)
+          cargo install wasm-bindgen-cli --version "$bindgen_version" --locked
+          wasm-bindgen --target web --out-dir site/pkg target/wasm32-unknown-unknown/release/xalen_wasm.wasm
+      - name: Stage and verify the web app
+        run: |
+          cp index.html ephemeris.mjs LICENSE NOTICE site/
+          node tests/fun-hora-wasm.mjs
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

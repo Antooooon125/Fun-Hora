@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fun-Hora • Jyotish 20-Varga, Jaimini & Vimshottari Engine v4.0</title>
+  <title>Fun-Hora • Jyotish 20-Varga, Jaimini & Vimshottari Engine v4.1</title>
   <style>
     :root {
       --bg-primary: #14171a;
@@ -381,7 +381,7 @@
 
 <header>
   <div>
-    <h1>FUN-HORA • JYOTISH 20-VARGA, JAIMINI &amp; VIMSHOTTARI <span style="font-size:0.75rem; color:var(--accent-gold);">v4.0</span></h1>
+    <h1>FUN-HORA • JYOTISH 20-VARGA, JAIMINI &amp; VIMSHOTTARI <span style="font-size:0.75rem; color:var(--accent-gold);">v4.1</span></h1>
     <p id="chartSubtitle">No birth data loaded — Enter Date, Time &amp; Location below to calculate</p>
   </div>
   <div class="toolbar">
@@ -419,7 +419,7 @@
 <div class="birth-panel">
   <h2>
     <span>1. Birth Data &amp; Geographic Coordinates (วัน เดือน ปี เวลา และสถานที่เกิด)</span>
-    <span id="calcStatusText" class="mono" style="font-size:0.78rem; color:var(--text-secondary);">Ready • Built-in JavaScript ephemeris</span>
+    <span id="calcStatusText" role="status" class="mono" style="font-size:0.78rem; color:var(--text-secondary);">Loading XALEN Ephemeris…</span>
   </h2>
   <div class="birth-grid">
     <div class="field-group">
@@ -435,16 +435,8 @@
       <input type="time" id="inTime" step="60" />
     </div>
     <div class="field-group">
-      <label>Timezone (UTC Offset)</label>
-      <select id="inTz">
-        <option value="7" selected>UTC+07:00 (Thailand / ICT)</option>
-        <option value="5.5">UTC+05:30 (India / IST)</option>
-        <option value="8">UTC+08:00 (Singapore / China)</option>
-        <option value="9">UTC+09:00 (Korea / Japan)</option>
-        <option value="0">UTC+00:00 (London / GMT)</option>
-        <option value="-5">UTC-05:00 (US Eastern)</option>
-        <option value="-8">UTC-08:00 (US Pacific)</option>
-      </select>
+      <label for="inTz">UTC offset at birth (hours)</label>
+      <input id="inTz" type="number" min="-14" max="14" step="any" value="7" required title="Include daylight saving if it applied. For UTC+05:30, use 5.5.">
     </div>
     <div class="field-group">
       <label>Quick City or Search Location</label>
@@ -476,7 +468,7 @@
       <input type="number" id="inLon" step="0.0001" placeholder="e.g. 99.8406" />
     </div>
     <div class="field-group" style="display:flex; flex-direction:row; gap:6px;">
-      <button class="gold-btn" style="flex:1;" onclick="calculateFromBirthInput()">Calculate Chart</button>
+      <button id="calculateButton" class="gold-btn" style="flex:1;" onclick="calculateFromBirthInput()" disabled>Calculate Chart</button>
       <button onclick="resetAllEmpty()" title="Clear all inputs">Clear</button>
     </div>
   </div>
@@ -733,6 +725,20 @@
 </div>
 
 <script type="module">
+  let calculateEphemeris;
+  const engineStatus = document.getElementById("calcStatusText");
+
+  async function initializeEphemeris() {
+    try {
+      const { loadEphemeris } = await import("./ephemeris.mjs");
+      calculateEphemeris = await loadEphemeris();
+      document.getElementById("calculateButton").disabled = false;
+      engineStatus.textContent = "Ready • XALEN Ephemeris (WebAssembly)";
+    } catch (error) {
+      console.error(error);
+      engineStatus.textContent = "XALEN Ephemeris could not load. Reload the page to try again.";
+    }
+  }
   // =========================================================================
   // CONSTANTS & ASTROLOGICAL TABLES
   // =========================================================================
@@ -829,7 +835,6 @@
   }
 
   function mod12(n) { return ((n % 12) + 12) % 12; }
-  function norm360(deg) { return ((deg % 360) + 360) % 360; }
   function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
 
   window.applyQuickCity = function(val) {
@@ -876,282 +881,10 @@
     document.getElementById("inLon").value = "";
     document.getElementById("cityQuickSelect").value = "";
     document.getElementById("chartSubtitle").textContent = "No birth data loaded — Enter Date, Time & Location below to calculate";
-    document.getElementById("calcStatusText").textContent = "Ready • Built-in JavaScript ephemeris";
+    if (calculateEphemeris) engineStatus.textContent = "Ready • XALEN Ephemeris (WebAssembly)";
     document.getElementById("emptyStateBanner").style.display = "block";
     document.getElementById("workspaceContainer").style.display = "none";
   };
-
-  // =========================================================================
-  // BUILT-IN JAVASCRIPT EPHEMERIS
-  // =========================================================================
-  function toJulianDay(year, month, day, utHours) {
-    let y = year, m = month;
-    if (m <= 2) { y -= 1; m += 12; }
-    const A = Math.floor(y / 100);
-    const B = 2 - A + Math.floor(A / 4);
-    return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + (utHours / 24.0) + B - 1524.5;
-  }
-
-  function getDeltaTSeconds(year) {
-    const t = (year - 2000) / 100;
-    if (year >= 1970 && year <= 2005) {
-      const u = year - 1979;
-      return 49.5 + 0.78 * u;
-    }
-    return 64.0 + 32.0 * t * t;
-  }
-
-  function getNutationAndObliquity(jdTT) {
-    const T = (jdTT - 2451545.0) / 36525.0;
-    const deg2rad = Math.PI / 180;
-    const D = norm360(297.85036 + 445267.111480 * T - 0.0019142 * T * T) * deg2rad;
-    const M = norm360(357.52772 + 35999.050340 * T - 0.0001603 * T * T) * deg2rad;
-    const Mp = norm360(134.96298 + 477198.867398 * T + 0.0086972 * T * T) * deg2rad;
-    const F = norm360(93.27191 + 483202.017538 * T - 0.0036825 * T * T) * deg2rad;
-    const om = norm360(125.04452 - 1934.136261 * T + 0.0020708 * T * T) * deg2rad;
-
-    const dPsiArcsec = -17.1996 * Math.sin(om)
-                       - 1.3187 * Math.sin(2 * F - 2 * D + 2 * om)
-                       - 0.2274 * Math.sin(2 * F + 2 * om)
-                       + 0.2062 * Math.sin(2 * om)
-                       + 0.1426 * Math.sin(M)
-                       + 0.0712 * Math.sin(Mp);
-
-    const dEpsArcsec = 9.2025 * Math.cos(om)
-                       + 0.5736 * Math.cos(2 * F - 2 * D + 2 * om)
-                       + 0.0977 * Math.cos(2 * F + 2 * om)
-                       - 0.0895 * Math.cos(2 * om);
-
-    const eps0Arcsec = 84381.448 - 46.8150 * T - 0.00059 * T * T + 0.001813 * T * T * T;
-    const dPsi = dPsiArcsec / 3600.0;
-    const trueEps = (eps0Arcsec + dEpsArcsec) / 3600.0;
-    return { dPsi, trueEps };
-  }
-
-  function getAyanamsha(jdTT, mode) {
-    const T = (jdTT - 2451545.0) / 36525.0;
-    const lahiri = 23.857092 + 1.39697137 * T + 0.0003086 * T * T;
-    if (mode === "suriyayart") return lahiri - 0.5920;
-    if (mode === "kp") return lahiri - 0.098333;
-    if (mode === "raman") return lahiri - 1.446389;
-    return lahiri;
-  }
-
-  function solveKepler(M_rad, e) {
-    let E = M_rad + e * Math.sin(M_rad) * (1.0 + e * Math.cos(M_rad));
-    for (let i = 0; i < 10; i++) {
-      const f = E - e * Math.sin(E) - M_rad;
-      const fp = 1.0 - e * Math.cos(E);
-      const dE = f / fp;
-      E -= dE;
-      if (Math.abs(dE) < 1e-11) break;
-    }
-    return E;
-  }
-
-  function computeApparentTropicalLongitudes(jdTT, nodeMode) {
-    const T = (jdTT - 2451545.0) / 36525.0;
-    const deg2rad = Math.PI / 180;
-    const rad2deg = 180 / Math.PI;
-    const { dPsi } = getNutationAndObliquity(jdTT);
-
-    const L0 = norm360(280.46646 + 36000.76983 * T + 0.0003032 * T * T);
-    const M_sun = norm360(357.52911 + 35999.05029 * T - 0.0001537 * T * T);
-    const e_earth = 0.016708634 - 0.000042037 * T - 0.0000001267 * T * T;
-    const Mrad = M_sun * deg2rad;
-
-    const C_sun = (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(Mrad)
-                + (0.019993 - 0.000101 * T) * Math.sin(2 * Mrad)
-                + 0.000289 * Math.sin(3 * Mrad);
-
-    const trueLonSunGeom = norm360(L0 + C_sun);
-    const trueAnomSun = norm360(M_sun + C_sun) * deg2rad;
-    const R_earth = (1.000001018 * (1 - e_earth * e_earth)) / (1 + e_earth * Math.cos(trueAnomSun));
-
-    const omega = norm360(125.04 - 1934.136 * T) * deg2rad;
-    const appLonSun = norm360(trueLonSunGeom - 0.00569 - 0.00478 * Math.sin(omega));
-
-    const earthHelioLon = norm360(trueLonSunGeom + 180.0) * deg2rad;
-    const xe = R_earth * Math.cos(earthHelioLon);
-    const ye = R_earth * Math.sin(earthHelioLon);
-
-    const Lp = norm360(218.3164477 + 481267.88123421 * T - 0.0015786 * T * T + (T * T * T) / 538841);
-    const D  = norm360(297.8501921 + 445267.1114034 * T - 0.0018819 * T * T + (T * T * T) / 545868);
-    const M  = M_sun;
-    const Mp = norm360(134.9633964 + 477198.8675055 * T + 0.0087414 * T * T + (T * T * T) / 69699);
-    const F  = norm360(93.2720950 + 483202.0175233 * T - 0.0036539 * T * T);
-    const A1 = norm360(119.75 + 131.849 * T) * deg2rad;
-    const A2 = norm360(53.09 + 479264.290 * T) * deg2rad;
-    const E_ecc = 1 - 0.002516 * T - 0.0000074 * T * T;
-
-    const dRad = D * deg2rad, mRad = M * deg2rad, mpRad = Mp * deg2rad, fRad = F * deg2rad;
-    let sumL = 0;
-    sumL += 6288774 * Math.sin(mpRad);
-    sumL += 1274027 * Math.sin(2 * dRad - mpRad);
-    sumL += 658314  * Math.sin(2 * dRad);
-    sumL += 213618  * Math.sin(2 * mpRad);
-    sumL -= 185116  * E_ecc * Math.sin(mRad);
-    sumL -= 114332  * Math.sin(2 * fRad);
-    sumL += 58793   * Math.sin(2 * dRad - 2 * mpRad);
-    sumL += 57066   * E_ecc * Math.sin(2 * dRad - mRad - mpRad);
-    sumL += 53322   * Math.sin(2 * dRad + mpRad);
-    sumL += 45758   * E_ecc * Math.sin(2 * dRad - mRad);
-    sumL -= 40923   * E_ecc * Math.sin(mRad - mpRad);
-    sumL -= 34720   * Math.sin(dRad);
-    sumL -= 30383   * E_ecc * Math.sin(mRad + mpRad);
-    sumL += 15327   * Math.sin(2 * dRad - 2 * fRad);
-    sumL -= 12528   * Math.sin(mpRad + 2 * fRad);
-    sumL += 10980   * Math.sin(mpRad - 2 * fRad);
-    sumL += 10675   * Math.sin(4 * dRad - mpRad);
-    sumL += 10034   * Math.sin(3 * mpRad);
-    sumL += 8548    * Math.sin(4 * dRad - 2 * mpRad);
-    sumL -= 7888    * E_ecc * Math.sin(2 * dRad + mRad - mpRad);
-    sumL -= 6766    * E_ecc * Math.sin(2 * dRad + mRad);
-    sumL -= 5163    * Math.sin(dRad - mpRad);
-    sumL += 4987    * E_ecc * Math.sin(dRad + mRad);
-    sumL += 4036    * E_ecc * Math.sin(2 * dRad - mRad + mpRad);
-    sumL += 3994    * Math.sin(2 * dRad + 2 * mpRad);
-    sumL += 3861    * Math.sin(4 * dRad);
-    sumL += 3665    * Math.sin(2 * dRad - 3 * mpRad);
-    sumL -= 2689    * E_ecc * Math.sin(mRad - 2 * mpRad);
-    sumL -= 2602    * Math.sin(2 * dRad - mpRad + 2 * fRad);
-    sumL += 2390    * E_ecc * Math.sin(2 * dRad - mRad - 2 * mpRad);
-    sumL -= 2348    * Math.sin(dRad + mpRad);
-    sumL += 2236    * E_ecc * E_ecc * Math.sin(2 * dRad - 2 * mRad);
-    sumL -= 2120    * E_ecc * Math.sin(mRad + 2 * mpRad);
-    sumL -= 2069    * E_ecc * E_ecc * Math.sin(2 * mRad);
-    sumL += 2048    * E_ecc * E_ecc * Math.sin(2 * dRad - 2 * mRad - mpRad);
-    sumL += 3958    * Math.sin(A1);
-    sumL += 1962    * Math.sin((Lp - F) * deg2rad);
-    sumL += 318     * Math.sin(A2);
-
-    const appLonMoon = norm360(Lp + sumL / 1000000.0 + dPsi);
-
-    const planets = {
-      Mercury: {
-        L: 252.250906 + 149474.0722491 * T + 0.00030350 * T * T,
-        a: 0.387098310,
-        e: 0.20563175 + 0.000020407 * T - 0.0000000283 * T * T,
-        i: 7.004986 + 0.0018215 * T - 0.00001810 * T * T,
-        O: 48.330893 + 1.1861883 * T + 0.00017542 * T * T,
-        w: 77.456119 + 1.5564776 * T + 0.00029544 * T * T
-      },
-      Venus: {
-        L: 181.979801 + 58519.2130302 * T + 0.00031014 * T * T,
-        a: 0.723329820,
-        e: 0.00677192 - 0.000047765 * T + 0.0000000981 * T * T,
-        i: 3.394662 + 0.0010037 * T - 0.00000088 * T * T,
-        O: 76.679920 + 0.9011206 * T + 0.00040618 * T * T,
-        w: 131.563703 + 1.4022288 * T - 0.00107618 * T * T
-      },
-      Mars: {
-        L: 355.433000 + 19141.6964471 * T + 0.00031052 * T * T,
-        a: 1.523679342,
-        e: 0.09340065 + 0.000090484 * T - 0.0000000806 * T * T,
-        i: 1.849726 - 0.0006011 * T + 0.00001276 * T * T,
-        O: 49.558093 + 0.7720959 * T + 0.00001557 * T * T,
-        w: 336.060234 + 1.8410449 * T + 0.00013477 * T * T
-      },
-      Jupiter: {
-        L: 34.351519 + 3036.3027748 * T + 0.00022330 * T * T,
-        a: 5.202603209,
-        e: 0.04849793 + 0.000163225 * T - 0.0000004714 * T * T,
-        i: 1.303267 - 0.0054965 * T + 0.00000466 * T * T,
-        O: 100.464407 + 1.0209774 * T + 0.00040315 * T * T,
-        w: 14.331207 + 1.6126352 * T + 0.00103042 * T * T
-      },
-      Saturn: {
-        L: 50.077444 + 1223.5110686 * T + 0.00051908 * T * T,
-        a: 9.554909192,
-        e: 0.05554814 - 0.000346641 * T - 0.0000006436 * T * T,
-        i: 2.488879 - 0.0037362 * T - 0.00001519 * T * T,
-        O: 113.665503 + 0.8770880 * T - 0.00012176 * T * T,
-        w: 93.057237 + 1.9637613 * T + 0.00083753 * T * T
-      }
-    };
-
-    const geocentric = { Sun: appLonSun, Moon: appLonMoon };
-    const Mj_rad = norm360(20.020 + 3034.906 * T) * deg2rad;
-    const Ms_rad = norm360(317.020 + 1222.114 * T) * deg2rad;
-
-    Object.keys(planets).forEach(name => {
-      const p = planets[name];
-      let L_deg = norm360(p.L);
-      if (name === "Jupiter") {
-        L_deg += -0.332 * Math.sin(2 * Mj_rad - 5 * Ms_rad - 67.6 * deg2rad)
-                 - 0.056 * Math.sin(2 * Mj_rad - 2 * Ms_rad + 21.0 * deg2rad)
-                 + 0.042 * Math.sin(3 * Mj_rad - 5 * Ms_rad + 21.0 * deg2rad)
-                 - 0.036 * Math.sin(Mj_rad - 2 * Ms_rad);
-      } else if (name === "Saturn") {
-        L_deg += +0.812 * Math.sin(2 * Mj_rad - 5 * Ms_rad - 67.6 * deg2rad)
-                 - 0.229 * Math.cos(2 * Mj_rad - 4 * Ms_rad - 2.0 * deg2rad)
-                 + 0.119 * Math.sin(Mj_rad - 2 * Ms_rad - 3.0 * deg2rad)
-                 + 0.046 * Math.sin(2 * Mj_rad - 6 * Ms_rad - 69.0 * deg2rad);
-      }
-
-      const M_p = norm360(L_deg - p.w);
-      const E_p = solveKepler(M_p * deg2rad, p.e);
-
-      const xv = p.a * (Math.cos(E_p) - p.e);
-      const yv = p.a * Math.sqrt(1 - p.e * p.e) * Math.sin(E_p);
-      const v = Math.atan2(yv, xv) * rad2deg;
-      const r = Math.sqrt(xv * xv + yv * yv);
-
-      const Orad = p.O * deg2rad;
-      const uRad = (v + p.w - p.O) * deg2rad;
-      const irad = p.i * deg2rad;
-
-      const xh = r * (Math.cos(Orad) * Math.cos(uRad) - Math.sin(Orad) * Math.sin(uRad) * Math.cos(irad));
-      const yh = r * (Math.sin(Orad) * Math.cos(uRad) + Math.cos(Orad) * Math.sin(uRad) * Math.cos(irad));
-
-      const xg = xh - xe;
-      const yg = yh - ye;
-
-      const geoLonGeom = norm360(Math.atan2(yg, xg) * rad2deg);
-      const aberration = -0.005693 * Math.cos((trueLonSunGeom - geoLonGeom) * deg2rad);
-      geocentric[name] = norm360(geoLonGeom + aberration + dPsi);
-    });
-
-    const meanNode = norm360(125.0445479 - 1934.1362891 * T + 0.0020754 * T * T);
-    let rahuTrop = meanNode;
-    if (nodeMode === "true") {
-      const trueCorr = -1.4979 * Math.sin(2 * (dRad - fRad))
-                       - 0.1500 * Math.sin(mRad)
-                       - 0.1226 * Math.sin(2 * dRad)
-                       + 0.1176 * Math.sin(2 * fRad)
-                       - 0.0801 * Math.sin(2 * (mpRad - fRad));
-      rahuTrop = norm360(meanNode + trueCorr);
-    }
-    rahuTrop = norm360(rahuTrop + dPsi);
-
-    geocentric.Rahu = rahuTrop;
-    geocentric.Ketu = norm360(rahuTrop + 180.0);
-
-    return { geocentric };
-  }
-
-  function computeAscendantTropical(jdUT, jdTT, latDeg, lonDeg) {
-    const T_ut = (jdUT - 2451545.0) / 36525.0;
-    const { dPsi, trueEps } = getNutationAndObliquity(jdTT);
-    const deg2rad = Math.PI / 180;
-    const rad2deg = 180 / Math.PI;
-
-    const gmst = norm360(
-      280.46061837 +
-      360.98564736629 * (jdUT - 2451545.0) +
-      0.000387933 * T_ut * T_ut -
-      (T_ut * T_ut * T_ut) / 38710000.0
-    );
-
-    const gast = norm360(gmst + dPsi * Math.cos(trueEps * deg2rad));
-    const ramcRad = norm360(gast + lonDeg) * deg2rad;
-    const latRad = latDeg * deg2rad;
-    const epsRad = trueEps * deg2rad;
-
-    const num = Math.cos(ramcRad);
-    const den = -(Math.sin(ramcRad) * Math.cos(epsRad) + Math.tan(latRad) * Math.sin(epsRad));
-    return norm360(Math.atan2(num, den) * rad2deg);
-  }
 
   function getThaiVishaStatus(signIdx, degFloat) {
     const vishaTable = {
@@ -1176,6 +909,7 @@
   }
 
   window.calculateFromBirthInput = function() {
+    if (!calculateEphemeris) return;
     const dateVal = document.getElementById("inDate").value;
     const timeVal = document.getElementById("inTime").value;
     const latVal = parseFloat(document.getElementById("inLat").value);
@@ -1184,7 +918,7 @@
     const locName = document.getElementById("inLocation").value.trim() || `${latVal.toFixed(2)}°, ${lonVal.toFixed(2)}°`;
     const personName = document.getElementById("inName").value.trim();
 
-    if (!dateVal || !timeVal || !Number.isFinite(tzVal) ||
+    if (!dateVal || !timeVal || !Number.isFinite(tzVal) || Math.abs(tzVal) > 14 ||
         !Number.isFinite(latVal) || Math.abs(latVal) > 90 ||
         !Number.isFinite(lonVal) || Math.abs(lonVal) > 180) {
       alert("Enter a birth date, time, UTC offset, and valid coordinates.");
@@ -1207,28 +941,18 @@
       Saturn: 0.0335
     };
 
-    const siderealMap = {};
-    const speedMap = {};
-    const jdUT = toJulianDay(Y, M, D, utHours);
-    const deltaTDays = getDeltaTSeconds(Y + (M - 1) / 12.0) / 86400.0;
-    const jdTT = jdUT + deltaTDays;
-    const ayan = getAyanamsha(jdTT, ayanMode);
-
-    const { geocentric } = computeApparentTropicalLongitudes(jdTT, nodeMode);
-    const { geocentric: geoPrev } = computeApparentTropicalLongitudes(jdTT - 0.5, nodeMode);
-    const { geocentric: geoNext } = computeApparentTropicalLongitudes(jdTT + 0.5, nodeMode);
-    const ascTrop = computeAscendantTropical(jdUT, jdTT, latVal, lonVal);
-
-    siderealMap.Lagna = norm360(ascTrop - ayan);
-    ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"].forEach(k => {
-      siderealMap[k] = norm360(geocentric[k] - ayan);
-      if (meanSpeeds[k]) {
-        let ds = geoNext[k] - geoPrev[k];
-        if (ds > 180) ds -= 360;
-        if (ds < -180) ds += 360;
-        speedMap[k] = ds;
-      }
-    });
+    let ephemeris;
+    try {
+      ephemeris = calculateEphemeris({
+        year: Y, month: M, day: D, utcHours: utHours,
+        lat: latVal, lon: lonVal, ayanMode, nodeMode
+      });
+    } catch (error) {
+      console.error(error);
+      engineStatus.textContent = "XALEN could not calculate these birth details.";
+      return;
+    }
+    const { ayan, siderealMap, speedMap } = ephemeris;
 
     const bodyMeta = [
       { key: "Lagna",   label: "Lagna (ล)",   thNum: "ล" },
@@ -1294,7 +1018,7 @@
     selectedVimMahaIdx = null;
     document.getElementById("chartSubtitle").textContent = state.subtitle;
     document.getElementById("calcStatusText").textContent =
-      `Engine: Built-in JavaScript ephemeris • Ayanamsha: ${ayan.toFixed(4)}° (${ayanMode.toUpperCase()}) • ${nodeMode === 'true' ? 'True' : 'Mean'} Nodes`;
+      `Engine: XALEN Ephemeris (WebAssembly) • Ayanamsha: ${ayan.toFixed(4)}° (${ayanMode.toUpperCase()}) • ${nodeMode === 'true' ? 'True' : 'Mean'} Nodes`;
     document.getElementById("emptyStateBanner").style.display = "none";
     document.getElementById("workspaceContainer").style.display = "block";
 
@@ -2218,11 +1942,13 @@
 
   // Initialize empty state
   buildVargaButtons();
+  initializeEphemeris();
   for (const id of ["ayanamshaSelect", "nodeModeSelect"]) {
     document.getElementById(id).addEventListener("change", () => {
       if (state) window.calculateFromBirthInput();
     });
   }
 </script>
+<footer style="padding: 16px; color: var(--text-secondary);">Ephemeris by <a href="https://github.com/vedika-io/xalen-ephemeris">XALEN</a> · <a href="./NOTICE">Notices</a> · <a href="./LICENSE">Apache 2.0</a></footer>
 </body>
 </html>
