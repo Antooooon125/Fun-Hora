@@ -512,17 +512,12 @@
       <p id="birthplaceHint" role="status"></p>
     </div>
     <div class="field-group">
-      <label for="cityQuickSelect">Quick Thai / Regional Presets</label>
-      <select id="cityQuickSelect" onchange="applyQuickCity(this.value)">
-        <option value="">-- Select City --</option>
-        <option value="13.7563,100.5018,Asia/Bangkok,Bangkok">Bangkok (13.76°N, 100.50°E)</option>
-        <option value="19.9105,99.8406,Asia/Bangkok,Mueang Chiang Rai">Chiang Rai (19.91°N, 99.84°E)</option>
-        <option value="18.7883,98.9853,Asia/Bangkok,Chiang Mai">Chiang Mai (18.79°N, 98.99°E)</option>
-        <option value="12.6814,101.2816,Asia/Bangkok,Rayong">Rayong (12.68°N, 101.28°E)</option>
-        <option value="16.4322,102.8236,Asia/Bangkok,Khon Kaen">Khon Kaen (16.43°N, 102.82°E)</option>
-        <option value="7.8804,98.3923,Asia/Bangkok,Phuket">Phuket (7.88°N, 98.39°E)</option>
-        <option value="35.1796,129.0756,Asia/Seoul,Busan">Busan, South Korea (35.18°N, 129.08°E)</option>
-      </select>
+      <label for="thaiProvince">จังหวัด / Province</label>
+      <select id="thaiProvince" disabled><option value="">เลือกจังหวัด / Select province</option></select>
+    </div>
+    <div class="field-group">
+      <label for="thaiDistrict" id="thaiDistrictLabel">อำเภอ / District</label>
+      <select id="thaiDistrict" disabled><option value="">เลือกจังหวัดก่อน / Select a province first</option></select>
     </div>
     <div class="field-group">
       <label for="inLat">Latitude (°N / -°S)</label>
@@ -980,20 +975,77 @@
 
   let locationRequest = 0;
   const birthplaceHint = document.getElementById("birthplaceHint");
-  for (const id of ["inLocation", "inLat", "inLon"]) {
-    document.getElementById(id).addEventListener("input", () => { locationRequest++; });
+  const thaiProvince = document.getElementById("thaiProvince");
+  const thaiDistrict = document.getElementById("thaiDistrict");
+  const thaiDistrictLabel = document.getElementById("thaiDistrictLabel");
+  let thaiPlaces = [];
+
+  function clearThaiSelection() {
+    thaiProvince.value = "";
+    thaiDistrict.replaceChildren(new Option("เลือกจังหวัดก่อน / Select a province first", ""));
+    thaiDistrict.disabled = true;
+    thaiDistrictLabel.textContent = "อำเภอ / District";
   }
 
-  window.applyQuickCity = function(val) {
-    if (!val) return;
+  function placeLabel(place) {
+    return place.th + " / " + place.en;
+  }
+
+  function applyThaiBirthplace(place, province) {
     locationRequest++;
-    birthplaceHint.textContent = "";
-    const [lat, lon, zone, name] = val.split(",");
-    document.getElementById("inLat").value = lat;
-    document.getElementById("inLon").value = lon;
-    document.getElementById("inZone").value = zone;
-    document.getElementById("inLocation").value = name;
-  };
+    document.getElementById("inLocation").value = place === province
+      ? province.th
+      : place.th + ", " + province.th;
+    document.getElementById("inLat").value = place.lat;
+    document.getElementById("inLon").value = place.lon;
+    document.getElementById("inZone").value = "Asia/Bangkok";
+    birthplaceHint.textContent = place === province
+      ? "Province center selected. Choose a district for a closer location."
+      : "District center selected. Use Pin on map to choose the exact birthplace.";
+  }
+
+  async function loadThaiPlaces() {
+    try {
+      const response = await fetch("./thai-places.json");
+      if (!response.ok) throw new Error("Could not load Thai places");
+      thaiPlaces = await response.json();
+      for (const province of thaiPlaces) {
+        thaiProvince.add(new Option(placeLabel(province), province.id));
+      }
+      thaiProvince.disabled = false;
+    } catch {
+      thaiProvince.options[0].textContent = "Province list unavailable";
+      thaiDistrict.options[0].textContent = "Use Find, Pin on map, or coordinates";
+    }
+  }
+
+  thaiProvince.addEventListener("change", () => {
+    const province = thaiPlaces.find(place => place.id === thaiProvince.value);
+    if (!province) {
+      clearThaiSelection();
+      return;
+    }
+    thaiDistrictLabel.textContent = province.id === "10" ? "เขต / District" : "อำเภอ / District";
+    thaiDistrict.replaceChildren(new Option("เลือก" + (province.id === "10" ? "เขต" : "อำเภอ") + " / Select district", ""));
+    for (const district of province.districts) {
+      thaiDistrict.add(new Option(placeLabel(district), district.id));
+    }
+    thaiDistrict.disabled = false;
+    applyThaiBirthplace(province, province);
+  });
+  thaiDistrict.addEventListener("change", () => {
+    const province = thaiPlaces.find(place => place.id === thaiProvince.value);
+    if (!province) return;
+    const district = province.districts.find(place => place.id === thaiDistrict.value);
+    applyThaiBirthplace(district ?? province, province);
+  });
+  for (const id of ["inLocation", "inLat", "inLon"]) {
+    document.getElementById(id).addEventListener("input", () => {
+      locationRequest++;
+      clearThaiSelection();
+      birthplaceHint.textContent = "";
+    });
+  }
 
   window.lookupLocation = async function() {
     const query = document.getElementById("inLocation").value.trim();
@@ -1010,6 +1062,7 @@
       const data = await resp.json();
       if (request !== locationRequest) return;
       if (data && data.length > 0) {
+        clearThaiSelection();
         document.getElementById("inLat").value = parseFloat(data[0].lat).toFixed(4);
         document.getElementById("inLon").value = parseFloat(data[0].lon).toFixed(4);
         statusEl.textContent = `Found: ${data[0].display_name.split(",").slice(0, 2).join(",")}`;
@@ -1039,7 +1092,7 @@
     document.getElementById("inLocation").value = "";
     document.getElementById("inLat").value = "";
     document.getElementById("inLon").value = "";
-    document.getElementById("cityQuickSelect").value = "";
+    clearThaiSelection();
     document.getElementById("chartSubtitle").textContent = "No birth data loaded — Enter Date, Time & Location below to calculate";
     if (calculateEphemeris) engineStatus.textContent = "Ready to calculate";
     document.getElementById("emptyStateBanner").style.display = "block";
@@ -2132,7 +2185,7 @@
     selectedVimMahaIdx = null;
     occurrenceKey = "";
     document.getElementById("birthOccurrenceField").hidden = true;
-    document.getElementById("cityQuickSelect").value = "";
+    clearThaiSelection();
     for (const [id, value] of Object.entries({
       inName: chart.name, inDate: displayBirthDate(chart.birthDate), inTime: chart.birthTime, inTz: chart.tz,
       inZone: chart.settings?.timeZone ?? "", inLocation: chart.location, inLat: chart.lat, inLon: chart.lon
@@ -2247,7 +2300,7 @@
     }
     document.getElementById("inLat").value = selection.lat.toFixed(6);
     document.getElementById("inLon").value = selection.lng.toFixed(6);
-    document.getElementById("cityQuickSelect").value = "";
+    clearThaiSelection();
     birthplaceHint.textContent = "Map pin applied. Check the birth time zone before calculating.";
     mapDialog.close();
   });
@@ -2283,6 +2336,7 @@
 
   // Initialize empty state
   buildVargaButtons();
+  loadThaiPlaces();
   initializeEphemeris();
   suriyayartToggle.addEventListener("click", () => {
     const previousMode = ayanamsaSelect.value;
@@ -2329,6 +2383,7 @@
     <summary>About Fun-Hora and what’s new</summary>
     <p>Fun-Hora is a Jyotish chart workbench with Thai round and square charts, 20 vargas, Jaimini, and Vimshottari.</p>
     <p>Version 4.2 preserves full-precision positions, resolves birth times using historical zone rules, and saves calculation settings with each chart.</p>
+    <p>Thai province and district names and approximate centers are adapted from William J. Reynolds’s <a href="https://doi.org/10.5281/zenodo.20049930">Thailand Canonical Administrative-Names Reference</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>).</p>
     <p>Chart calculations run in your browser. The map picker loads map tiles from OpenStreetMap. The optional Find button sends the location search to <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> via <a href="https://operations.osmfoundation.org/policies/nominatim/">Nominatim</a>.</p>
   </details>
   <p>Astronomical calculations by <a href="https://github.com/vedika-io/xalen-ephemeris">XALEN Ephemeris</a> · <a href="./NOTICE">Notices</a> · <a href="./LICENSE">Apache 2.0</a></p>

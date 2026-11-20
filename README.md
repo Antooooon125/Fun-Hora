@@ -2,7 +2,7 @@
 
 **[Open Fun-Hora](https://antooooon125.github.io/Fun-Hora/)**
 
-Fun-Hora is a browser-based Jyotish chart workbench with Thai round and square chart styles, 20 vargas, Jaimini analysis, and Vimshottari dasha. Enter your birth date in DD/MM/YYYY format, local time, and location to calculate a chart. Choose a quick location, enter coordinates, or use **Pin on map** to select a birthplace on OpenStreetMap. Check the birth time zone when using a pin. You can adjust placements in the editor, save a chart as JSON, and print it.
+Fun-Hora is a browser-based Jyotish chart workbench with Thai round and square chart styles, 20 vargas, Jaimini analysis, and Vimshottari dasha. Enter your birth date in DD/MM/YYYY format, local time, and location to calculate a chart. Choose a Thai province and district, enter coordinates, or use **Pin on map** to select a birthplace on OpenStreetMap. A Thai district selection uses its approximate center and sets the time zone to Asia/Bangkok. Use a map pin for a more precise birthplace. You can adjust placements in the editor, save a chart as JSON, and print it.
 
 ## What's new in v4.2
 
@@ -32,5 +32,7 @@ An ayanamsa is the angle subtracted from a tropical longitude to get a sidereal 
 This fixed offset is Fun-Hora’s convention. Its agreement with a traditional Suriyayart reference has yet to be independently verified.
 
 Chart calculations run on your device. The optional **Find** button sends the location search text to OpenStreetMap's Nominatim service. Preset cities and manual coordinates work without that lookup. [Nominatim usage policy](https://operations.osmfoundation.org/policies/nominatim/)
+
+The Thai selector covers 77 provincial-level areas (including Bangkok) and 928 districts. Names, codes, and centroids are adapted from William J. Reynolds’s [Thailand Canonical Administrative-Names Reference](https://doi.org/10.5281/zenodo.20049930) ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)), using source revision [5c611f8](https://github.com/DevelopedbyWill/thailand-canonical-admin-names/tree/5c611f8cd92691bdc62d7492983480516b00500d). The province and district CSV columns were reduced and grouped into JSON. [Upstream attributions](https://github.com/DevelopedbyWill/thailand-canonical-admin-names/blob/5c611f8cd92691bdc62d7492983480516b00500d/NOTICE.md).
 
 The Pages workflow builds XALEN, verifies the browser bindings, and publishes Fun-Hora. See the [XALEN library documentation](XALEN.md), [license](LICENSE), and [notices](NOTICE) for the underlying project.
