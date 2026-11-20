@@ -43,6 +43,14 @@ export function displayBirthDate(iso) {
   return iso.split('-').reverse().join('/');
 }
 
+export function parseBirthTime(input) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(input.trim());
+  if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) {
+    throw new Error('Enter a 24-hour birth time from 00:00 to 23:59.');
+  }
+  return match[1].padStart(2, '0') + ':' + match[2];
+}
+
 export function resolveBirthTime(date, time, zone, manualOffset) {
   const wallTime = civilTimestamp(date, time);
   if (!zone) {

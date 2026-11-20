@@ -483,8 +483,8 @@
       </div>
     </div>
     <div class="field-group">
-      <label>Time of Birth (24h Local)</label>
-      <input type="time" id="inTime" step="60" />
+      <label for="inTime">Time of Birth (24-hour local time)</label>
+      <input id="inTime" type="text" placeholder="18:30" maxlength="5" autocomplete="off" required />
     </div>
     <div class="field-group">
       <label for="inZone">Birth time zone (IANA)</label>
@@ -808,7 +808,7 @@
 </div>
 
 <script type="module">
-  import { APP_VERSION, ENGINE_VERSION, longitudeParts, resolveBirthTime, validateChart, parseBirthDate, displayBirthDate } from "./chart-data.mjs";
+  import { APP_VERSION, ENGINE_VERSION, longitudeParts, resolveBirthTime, validateChart, parseBirthDate, displayBirthDate, parseBirthTime } from "./chart-data.mjs";
 
   const settingControls = {
     ayanMode: "ayanamshaSelect",
@@ -1071,7 +1071,7 @@
   window.calculateFromBirthInput = function() {
     if (!calculateEphemeris) return;
     const birthDateInput = document.getElementById("inDate").value;
-    const timeVal = document.getElementById("inTime").value;
+    const birthTimeInput = document.getElementById("inTime");
     const latVal = parseFloat(document.getElementById("inLat").value);
     const lonVal = parseFloat(document.getElementById("inLon").value);
     const zone = document.getElementById("inZone").value.trim();
@@ -1079,21 +1079,23 @@
     const locName = document.getElementById("inLocation").value.trim() || `${latVal.toFixed(2)}°, ${lonVal.toFixed(2)}°`;
     const personName = document.getElementById("inName").value.trim();
 
-    if (!birthDateInput || !timeVal ||
+    if (!birthDateInput || !birthTimeInput.value ||
         !Number.isFinite(latVal) || Math.abs(latVal) > 90 ||
         !Number.isFinite(lonVal) || Math.abs(lonVal) > 180) {
       alert("Enter a birth date, time, UTC offset, and valid coordinates.");
       return;
     }
 
-    let birthTimes, dateVal;
+    let birthTimes, dateVal, timeVal;
     try {
       dateVal = parseBirthDate(birthDateInput);
+      timeVal = parseBirthTime(birthTimeInput.value);
       birthTimes = resolveBirthTime(dateVal, timeVal, zone, manualOffset);
     } catch (error) {
       engineStatus.textContent = error.message;
       return;
     }
+    birthTimeInput.value = timeVal;
     const occurrenceField = document.getElementById("birthOccurrenceField");
     const occurrence = document.getElementById("birthOccurrence");
     occurrenceField.hidden = birthTimes.length !== 2;
