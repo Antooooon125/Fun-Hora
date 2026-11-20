@@ -17,6 +17,20 @@
     }
     #birthplaceDialog h2, #birthplaceDialog p { margin-bottom: 8px; }
     #birthplaceMapStatus { min-height: 1.5em; margin-top: 8px; }
+    .birth-date-controls { position: relative; display: flex; flex-wrap: wrap; gap: 6px; }
+    .birth-date-controls #inDate { flex: 1 1 90px; min-width: 0; }
+    .birth-date-controls button { min-height: 36px; }
+    #birthDateCalendar.calendar-anchor {
+      position: absolute;
+      inset-inline-end: 0;
+      bottom: 0;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      border: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
     .birthplace-controls { display: flex; flex-wrap: wrap; gap: 6px; }
     .birthplace-controls input { flex: 1 1 100%; min-width: 0; }
     .birthplace-controls button, .map-actions button { min-height: 36px; }
@@ -461,7 +475,12 @@
     </div>
     <div class="field-group">
       <label for="inDate">Date of Birth (DD/MM/YYYY)</label>
-      <input id="inDate" type="text" placeholder="31/12/1990" maxlength="10" autocomplete="bday" required />
+      <div class="birth-date-controls">
+        <input id="inDate" type="text" placeholder="31/12/1990" maxlength="10" autocomplete="bday" required />
+        <button id="openBirthDateCalendar" type="button" aria-label="Open date of birth calendar">Calendar</button>
+        <input id="birthDateCalendar" class="calendar-anchor" type="date" min="0001-01-01" max="9999-12-31"
+          aria-label="Date of birth calendar" aria-hidden="true" tabindex="-1" />
+      </div>
     </div>
     <div class="field-group">
       <label>Time of Birth (24h Local)</label>
@@ -1015,6 +1034,7 @@
     selectedVimMahaIdx = null;
     document.getElementById("inName").value = "";
     document.getElementById("inDate").value = "";
+    document.getElementById("birthDateCalendar").value = "";
     document.getElementById("inTime").value = "";
     document.getElementById("inLocation").value = "";
     document.getElementById("inLat").value = "";
@@ -2228,6 +2248,35 @@
     document.getElementById("cityQuickSelect").value = "";
     birthplaceHint.textContent = "Map pin applied. Check the birth time zone before calculating.";
     mapDialog.close();
+  });
+
+  const birthDateInput = document.getElementById("inDate");
+  const birthDateCalendar = document.getElementById("birthDateCalendar");
+  const openBirthDateCalendar = document.getElementById("openBirthDateCalendar");
+
+  openBirthDateCalendar.addEventListener("click", () => {
+    try {
+      birthDateCalendar.value = parseBirthDate(birthDateInput.value);
+    } catch {
+      birthDateCalendar.value = "";
+    }
+
+    try {
+      if (typeof birthDateCalendar.showPicker === "function") {
+        birthDateCalendar.showPicker();
+        return;
+      }
+    } catch {
+      // Let the visitor use the visible native date field instead.
+    }
+    birthDateCalendar.classList.remove("calendar-anchor");
+    birthDateCalendar.removeAttribute("aria-hidden");
+    birthDateCalendar.tabIndex = 0;
+    birthDateCalendar.focus();
+  });
+
+  birthDateCalendar.addEventListener("change", () => {
+    if (birthDateCalendar.value) birthDateInput.value = displayBirthDate(birthDateCalendar.value);
   });
 
   // Initialize empty state
