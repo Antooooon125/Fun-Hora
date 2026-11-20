@@ -2,7 +2,13 @@
 
 **[Open Fun-Hora](https://antooooon125.github.io/Fun-Hora/)**
 
+Developed in part by **Amnuayvit Thitibordin**. Fun-Hora is a work in progress. Calculations and displays may contain errors. [Report an issue](https://github.com/Antooooon125/Fun-Hora/issues).
+
 Fun-Hora is a browser-based Jyotish chart workbench with Thai round and square chart styles, 20 vargas, Jaimini analysis, and Vimshottari dasha. Enter your birth date in DD/MM/YYYY format, local time, and location to calculate a chart. Choose a Thai province and district, enter coordinates, or use **Pin on map** to select a birthplace on OpenStreetMap. A Thai district selection uses its approximate center and sets the time zone to Asia/Bangkok. Use a map pin for a more precise birthplace. You can adjust placements in the editor, save a chart as JSON, and print it.
+
+## Use and sharing
+
+The hosted Fun-Hora app is free to use for noncommercial purposes only. You may share and adapt Fun-Hora’s original materials for noncommercial purposes. Credit Fun-Hora and keep these same terms when sharing adaptations. XALEN and third-party materials are covered by their respective licenses. [XALEN license](LICENSE) · [Notices](NOTICE)
 
 ## What's new in v4.2
 
