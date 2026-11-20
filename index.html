@@ -15,6 +15,17 @@
       border-radius: 10px;
       padding: 16px;
     }
+    #birthplaceDialog h2, #birthplaceDialog p { margin-bottom: 8px; }
+    #birthplaceMapStatus { min-height: 1.5em; margin-top: 8px; }
+    .birthplace-controls { display: flex; flex-wrap: wrap; gap: 6px; }
+    .birthplace-controls input { flex: 1 1 100%; min-width: 0; }
+    .birthplace-controls button, .map-actions button { min-height: 36px; }
+    #birthplaceHint { font-size: 0.83rem; color: var(--text-secondary); }
+    #how-fun-hora-works { max-width: 76ch; }
+    #how-fun-hora-works h2, #how-fun-hora-works h3 { color: var(--text-primary); margin-top: 12px; }
+    #how-fun-hora-works p, #how-fun-hora-works ul { margin-block: 8px; }
+    #how-fun-hora-works ul { padding-inline-start: 24px; }
+    #how-fun-hora-works a { color: var(--accent-blue); }
     #birthplaceDialog::backdrop { background: rgb(0 0 0 / 65%); }
     #birthplaceMap { height: min(50vh, 440px); background: var(--bg-tertiary); }
     #birthplaceDialog .map-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -474,14 +485,15 @@
     </div>
     <div class="field-group">
       <label for="inLocation">Birthplace</label>
-      <div style="display:flex; gap:4px;">
-        <input type="text" id="inLocation" placeholder="City / Province (e.g. Chiang Rai)" style="width:100%;" />
+      <div class="birthplace-controls">
+        <input type="text" id="inLocation" aria-describedby="birthplaceHint" placeholder="City / Province (e.g. Chiang Rai)" style="width:100%;" />
         <button type="button" onclick="lookupLocation()" title="Geocode city name">Find</button>
         <button type="button" id="openBirthplaceMap">Pin on map</button>
       </div>
+      <p id="birthplaceHint" role="status"></p>
     </div>
     <div class="field-group">
-      <label>Quick Thai / Regional Presets</label>
+      <label for="cityQuickSelect">Quick Thai / Regional Presets</label>
       <select id="cityQuickSelect" onchange="applyQuickCity(this.value)">
         <option value="">-- Select City --</option>
         <option value="13.7563,100.5018,Asia/Bangkok,Bangkok">Bangkok (13.76°N, 100.50°E)</option>
@@ -494,11 +506,11 @@
       </select>
     </div>
     <div class="field-group">
-      <label>Latitude (°N / -°S)</label>
+      <label for="inLat">Latitude (°N / -°S)</label>
       <input type="number" id="inLat" step="0.0001" placeholder="e.g. 19.9105" />
     </div>
     <div class="field-group">
-      <label>Longitude (°E / -°W)</label>
+      <label for="inLon">Longitude (°E / -°W)</label>
       <input type="number" id="inLon" step="0.0001" placeholder="e.g. 99.8406" />
     </div>
     <div class="field-group" style="display:flex; flex-direction:row; gap:6px;">
@@ -819,7 +831,7 @@
       return SIGNS[sign].en + " " + deg + "°" + String(min).padStart(2, "0") + "′";
     };
     positions.textContent = "Hora Lagna (HL) · " + format(lagnas.hora) + " | Ghati Lagna (GL) · " + format(lagnas.ghati);
-    sunrise.textContent = "Reference sunrise (UTC) · " + lagnas.sunriseUtc.replace("T", " ").replace(".000Z", "");
+    sunrise.textContent = "Reference sunrise (UTC) · " + displayBirthDate(lagnas.sunriseUtc.slice(0, 10)) + " " + lagnas.sunriseUtc.slice(11, 19);
   }
 
   function renderChartSettings() {
@@ -948,10 +960,15 @@
   function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
 
   let locationRequest = 0;
+  const birthplaceHint = document.getElementById("birthplaceHint");
+  for (const id of ["inLocation", "inLat", "inLon"]) {
+    document.getElementById(id).addEventListener("input", () => { locationRequest++; });
+  }
 
   window.applyQuickCity = function(val) {
     if (!val) return;
     locationRequest++;
+    birthplaceHint.textContent = "";
     const [lat, lon, zone, name] = val.split(",");
     document.getElementById("inLat").value = lat;
     document.getElementById("inLon").value = lon;
@@ -965,6 +982,7 @@
       alert("Enter a city or province name first (e.g., Chiang Rai, Rayong, Bangkok).");
       return;
     }
+    birthplaceHint.textContent = "";
     const request = ++locationRequest;
     const statusEl = document.getElementById("calcStatusText");
     statusEl.textContent = `Searching coordinates for "${query}"...`;
@@ -987,6 +1005,7 @@
 
   window.resetAllEmpty = function() {
     locationRequest++;
+    birthplaceHint.textContent = "";
     state = null;
     document.getElementById("inZone").value = "";
     document.getElementById("birthOccurrenceField").hidden = true;
@@ -1818,8 +1837,8 @@
 
     document.getElementById("antardashaBody").innerHTML = maha.antardashas.map(ad => {
       const isNow = nowMs >= ad.startMs && nowMs < ad.endMs;
-      const sStr = new Date(ad.startMs).toISOString().slice(0, 7);
-      const eStr = new Date(ad.endMs).toISOString().slice(0, 7);
+      const sStr = new Date(ad.startMs).toISOString().slice(0, 7).split("-").reverse().join("/");
+      const eStr = new Date(ad.endMs).toISOString().slice(0, 7).split("-").reverse().join("/");
       const occ = computed.filter(c => c.key !== "Lagna" && c.vargaSigns.D1 === ad.sign).map(c => c.thNum).join(" ") || "—";
       const hIdx = mod12(ad.sign - d1Lagna);
       return `
@@ -1912,8 +1931,8 @@
       const isSelected = p.idx === selectedVimMahaIdx;
       const gObj = computed.find(c => c.key === p.lord.key);
       const hIdx = mod12(gObj.vargaSigns.D1 - d1Lagna);
-      const sDate = new Date(p.startMs).toISOString().slice(0, 10);
-      const eDate = new Date(p.endMs).toISOString().slice(0, 10);
+      const sDate = displayBirthDate(new Date(p.startMs).toISOString().slice(0, 10));
+      const eDate = displayBirthDate(new Date(p.endMs).toISOString().slice(0, 10));
 
       return `
         <tr class="clickable-row ${isSelected ? 'selected-dasha' : ''}" onclick="selectVimMaha(${p.idx})">
@@ -1945,8 +1964,8 @@
       const isNow = nowMs >= b.startMs && nowMs < b.endMs;
       const gObj = computed.find(c => c.key === b.lord.key);
       const hIdx = mod12(gObj.vargaSigns.D1 - d1Lagna);
-      const sDate = new Date(b.startMs).toISOString().slice(0, 10);
-      const eDate = new Date(b.endMs).toISOString().slice(0, 10);
+      const sDate = displayBirthDate(new Date(b.startMs).toISOString().slice(0, 10));
+      const eDate = displayBirthDate(new Date(b.endMs).toISOString().slice(0, 10));
       const months = (b.years * 12).toFixed(1);
 
       return `
@@ -2085,6 +2104,7 @@
       return;
     }
     locationRequest++;
+    birthplaceHint.textContent = "";
     state = chart;
     selectedMahaIdx = null;
     selectedVimMahaIdx = null;
@@ -2114,6 +2134,7 @@
   // Load the map library only when a visitor opens the picker.
   const mapDialog = document.getElementById("birthplaceDialog");
   const mapStatus = document.getElementById("birthplaceMapStatus");
+  const mapOpenButton = document.getElementById("openBirthplaceMap");
   const mapCenterButton = document.getElementById("pinMapCenter");
   const mapApplyButton = document.getElementById("useBirthplacePin");
   let map, pin, selection, leafletLoad;
@@ -2154,7 +2175,8 @@
     mapStatus.textContent = selection.lat.toFixed(6) + ", " + selection.lng.toFixed(6);
   }
 
-  document.getElementById("openBirthplaceMap").addEventListener("click", async () => {
+  mapDialog.addEventListener("close", () => mapOpenButton.focus());
+  mapOpenButton.addEventListener("click", async () => {
     mapDialog.showModal();
     mapStatus.textContent = "Loading OpenStreetMap…";
     mapCenterButton.disabled = true;
@@ -2193,10 +2215,18 @@
   mapApplyButton.addEventListener("click", () => {
     if (!selection) return;
     locationRequest++;
+    const previousLat = Number.parseFloat(document.getElementById("inLat").value);
+    const previousLon = Number.parseFloat(document.getElementById("inLon").value);
+    // A distant pin establishes coordinates without inheriting the old place label.
+    const lonDistance = Math.abs(((selection.lng - previousLon + 540) % 360) - 180);
+    if (!Number.isFinite(previousLat) || !Number.isFinite(previousLon) ||
+        Math.abs(selection.lat - previousLat) > 0.1 || lonDistance > 0.1) {
+      document.getElementById("inLocation").value = "";
+    }
     document.getElementById("inLat").value = selection.lat.toFixed(6);
     document.getElementById("inLon").value = selection.lng.toFixed(6);
     document.getElementById("cityQuickSelect").value = "";
-    engineStatus.textContent = "Birthplace coordinates set. Check the birth time zone before calculating.";
+    birthplaceHint.textContent = "Map pin applied. Check the birth time zone before calculating.";
     mapDialog.close();
   });
 
