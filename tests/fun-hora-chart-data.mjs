@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
-import { BODY_KEYS, longitudeParts, resolveBirthTime, validateChart } from '../chart-data.mjs';
+import { BODY_KEYS, displayBirthDate, longitudeParts, parseBirthDate, resolveBirthTime, validateChart } from '../chart-data.mjs';
+
+assert.equal(parseBirthDate('29/02/2024'), '2024-02-29');
+assert.equal(displayBirthDate('1990-12-31'), '31/12/1990');
+assert.throws(() => parseBirthDate('29/02/2023'), /valid birth date/);
+assert.throws(() => parseBirthDate('2024-02-29'), /DD\/MM\/YYYY/);
 
 const finalArc = longitudeParts(29 + 59 / 60 + 45 / 3600);
 assert.equal(finalArc.sign, 0);

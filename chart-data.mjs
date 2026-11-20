@@ -30,6 +30,19 @@ function civilTimestamp(date, time) {
   return timestamp;
 }
 
+export function parseBirthDate(input) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(input.trim());
+  if (!match) throw new Error('Enter the birth date as DD/MM/YYYY.');
+  const [, day, month, year] = match;
+  const iso = year + '-' + month + '-' + day;
+  civilTimestamp(iso, '00:00');
+  return iso;
+}
+
+export function displayBirthDate(iso) {
+  return iso.split('-').reverse().join('/');
+}
+
 export function resolveBirthTime(date, time, zone, manualOffset) {
   const wallTime = civilTimestamp(date, time);
   if (!zone) {

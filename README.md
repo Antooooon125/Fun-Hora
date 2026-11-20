@@ -2,7 +2,7 @@
 
 **[Open Fun-Hora](https://antooooon125.github.io/Fun-Hora/)**
 
-Fun-Hora is a browser-based Jyotish chart workbench with Thai round and square chart styles, 20 vargas, Jaimini analysis, and Vimshottari dasha. Enter your birth date, local time, and location to calculate a chart. You can adjust placements in the editor, save a chart as JSON, and print it.
+Fun-Hora is a browser-based Jyotish chart workbench with Thai round and square chart styles, 20 vargas, Jaimini analysis, and Vimshottari dasha. Enter your birth date in DD/MM/YYYY format, local time, and location to calculate a chart. Choose a quick location, enter coordinates, or use **Pin on map** to select a birthplace on OpenStreetMap. Check the birth time zone when using a pin. You can adjust placements in the editor, save a chart as JSON, and print it.
 
 ## What's new in v4.2
 

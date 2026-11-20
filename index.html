@@ -6,6 +6,18 @@
   <title>Fun-Hora | Jyotish Chart Workbench</title>
   <meta name="description" content="Calculate and explore Thai-style Jyotish charts with 20 vargas, Jaimini, and Vimshottari in Fun-Hora.">
   <style>
+    #birthplaceDialog {
+      width: min(760px, calc(100% - 24px));
+      max-height: calc(100% - 24px);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    #birthplaceDialog::backdrop { background: rgb(0 0 0 / 65%); }
+    #birthplaceMap { height: min(50vh, 440px); background: var(--bg-tertiary); }
+    #birthplaceDialog .map-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     :root {
       --bg-primary: #14171a;
       --bg-secondary: #1c2126;
@@ -437,8 +449,8 @@
       <input type="text" id="inName" placeholder="e.g., Native / Client Name" />
     </div>
     <div class="field-group">
-      <label>Date of Birth (YYYY-MM-DD)</label>
-      <input type="date" id="inDate" />
+      <label for="inDate">Date of Birth (DD/MM/YYYY)</label>
+      <input id="inDate" type="text" placeholder="31/12/1990" maxlength="10" autocomplete="bday" required />
     </div>
     <div class="field-group">
       <label>Time of Birth (24h Local)</label>
@@ -461,10 +473,11 @@
       </div>
     </div>
     <div class="field-group">
-      <label>Quick City or Search Location</label>
+      <label for="inLocation">Birthplace</label>
       <div style="display:flex; gap:4px;">
         <input type="text" id="inLocation" placeholder="City / Province (e.g. Chiang Rai)" style="width:100%;" />
         <button type="button" onclick="lookupLocation()" title="Geocode city name">Find</button>
+        <button type="button" id="openBirthplaceMap">Pin on map</button>
       </div>
     </div>
     <div class="field-group">
@@ -478,7 +491,6 @@
         <option value="16.4322,102.8236,Asia/Bangkok,Khon Kaen">Khon Kaen (16.43°N, 102.82°E)</option>
         <option value="7.8804,98.3923,Asia/Bangkok,Phuket">Phuket (7.88°N, 98.39°E)</option>
         <option value="35.1796,129.0756,Asia/Seoul,Busan">Busan, South Korea (35.18°N, 129.08°E)</option>
-        <option value="28.6139,77.2090,Asia/Kolkata,New Delhi">New Delhi, India (28.61°N, 77.21°E)</option>
       </select>
     </div>
     <div class="field-group">
@@ -496,6 +508,18 @@
   </div>
 </div>
 
+<dialog id="birthplaceDialog" aria-labelledby="birthplaceDialogTitle">
+  <h2 id="birthplaceDialogTitle">Pin your birthplace</h2>
+  <p>Click or tap the map, or pan with the keyboard and select the map center.</p>
+  <div id="birthplaceMap" aria-label="OpenStreetMap birthplace picker"></div>
+  <p id="birthplaceMapStatus" role="status"></p>
+  <div class="map-actions">
+    <button type="button" id="pinMapCenter" disabled>Pin map center</button>
+    <button type="button" id="useBirthplacePin" class="gold-btn" disabled>Use this location</button>
+    <form method="dialog"><button>Cancel</button></form>
+  </div>
+</dialog>
+
 <!-- EMPTY STATE BANNER -->
 <div id="emptyStateBanner" class="empty-banner">
   <h3>No Chart Calculated Yet</h3>
@@ -506,6 +530,7 @@
 <div id="workspaceContainer" style="display:none;">
   <section id="specialLagnas" class="card" aria-labelledby="specialLagnasTitle" hidden>
     <h2 id="specialLagnasTitle">Special Lagnas</h2>
+    <p><a href="#how-special-lagnas-work" style="color:var(--accent-blue)">How HL and GL are calculated</a></p>
     <p id="specialLagnasPositions"></p>
     <p id="specialLagnasSunrise"></p>
   </section>
@@ -752,7 +777,7 @@
 </div>
 
 <script type="module">
-  import { APP_VERSION, ENGINE_VERSION, longitudeParts, resolveBirthTime, validateChart } from "./chart-data.mjs";
+  import { APP_VERSION, ENGINE_VERSION, longitudeParts, resolveBirthTime, validateChart, parseBirthDate, displayBirthDate } from "./chart-data.mjs";
 
   const settingControls = {
     ayanMode: "ayanamshaSelect",
@@ -922,8 +947,11 @@
   function mod12(n) { return ((n % 12) + 12) % 12; }
   function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
 
+  let locationRequest = 0;
+
   window.applyQuickCity = function(val) {
     if (!val) return;
+    locationRequest++;
     const [lat, lon, zone, name] = val.split(",");
     document.getElementById("inLat").value = lat;
     document.getElementById("inLon").value = lon;
@@ -937,11 +965,13 @@
       alert("Enter a city or province name first (e.g., Chiang Rai, Rayong, Bangkok).");
       return;
     }
+    const request = ++locationRequest;
     const statusEl = document.getElementById("calcStatusText");
     statusEl.textContent = `Searching coordinates for "${query}"...`;
     try {
       const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
       const data = await resp.json();
+      if (request !== locationRequest) return;
       if (data && data.length > 0) {
         document.getElementById("inLat").value = parseFloat(data[0].lat).toFixed(4);
         document.getElementById("inLon").value = parseFloat(data[0].lon).toFixed(4);
@@ -950,11 +980,13 @@
         statusEl.textContent = "Location not found — enter Latitude & Longitude manually.";
       }
     } catch (e) {
+      if (request !== locationRequest) return;
       statusEl.textContent = "Geocoding offline — select a Quick City or enter Lat/Lon.";
     }
   };
 
   window.resetAllEmpty = function() {
+    locationRequest++;
     state = null;
     document.getElementById("inZone").value = "";
     document.getElementById("birthOccurrenceField").hidden = true;
@@ -999,7 +1031,7 @@
 
   window.calculateFromBirthInput = function() {
     if (!calculateEphemeris) return;
-    const dateVal = document.getElementById("inDate").value;
+    const birthDateInput = document.getElementById("inDate").value;
     const timeVal = document.getElementById("inTime").value;
     const latVal = parseFloat(document.getElementById("inLat").value);
     const lonVal = parseFloat(document.getElementById("inLon").value);
@@ -1008,15 +1040,16 @@
     const locName = document.getElementById("inLocation").value.trim() || `${latVal.toFixed(2)}°, ${lonVal.toFixed(2)}°`;
     const personName = document.getElementById("inName").value.trim();
 
-    if (!dateVal || !timeVal ||
+    if (!birthDateInput || !timeVal ||
         !Number.isFinite(latVal) || Math.abs(latVal) > 90 ||
         !Number.isFinite(lonVal) || Math.abs(lonVal) > 180) {
       alert("Enter a birth date, time, UTC offset, and valid coordinates.");
       return;
     }
 
-    let birthTimes;
+    let birthTimes, dateVal;
     try {
+      dateVal = parseBirthDate(birthDateInput);
       birthTimes = resolveBirthTime(dateVal, timeVal, zone, manualOffset);
     } catch (error) {
       engineStatus.textContent = error.message;
@@ -1117,7 +1150,7 @@
     const weekday = new Date(dateVal + "T00:00:00Z").getUTCDay();
     const lagnaSign = bodies[0].sign;
     const titlePrefix = personName ? `${personName} • ` : "";
-    const subtitle = `${titlePrefix}${dateVal} ${timeVal} (UTC${tzVal >= 0 ? '+' + tzVal : tzVal}) • ${locName} • ลัคนา${SIGNS[lagnaSign].th} ${String(bodies[0].deg).padStart(2,'0')}°${String(bodies[0].min).padStart(2,'0')}'`;
+    const subtitle = `${titlePrefix}${displayBirthDate(dateVal)} ${timeVal} (UTC${tzVal >= 0 ? '+' + tzVal : tzVal}) • ${locName} • ลัคนา${SIGNS[lagnaSign].th} ${String(bodies[0].deg).padStart(2,'0')}°${String(bodies[0].min).padStart(2,'0')}'`;
 
     state = {
       name: personName,
@@ -2051,6 +2084,7 @@
       alert("Invalid Fun-Hora chart file. Your current chart was kept.");
       return;
     }
+    locationRequest++;
     state = chart;
     selectedMahaIdx = null;
     selectedVimMahaIdx = null;
@@ -2058,7 +2092,7 @@
     document.getElementById("birthOccurrenceField").hidden = true;
     document.getElementById("cityQuickSelect").value = "";
     for (const [id, value] of Object.entries({
-      inName: chart.name, inDate: chart.birthDate, inTime: chart.birthTime, inTz: chart.tz,
+      inName: chart.name, inDate: displayBirthDate(chart.birthDate), inTime: chart.birthTime, inTz: chart.tz,
       inZone: chart.settings?.timeZone ?? "", inLocation: chart.location, inLat: chart.lat, inLon: chart.lon
     })) {
       document.getElementById(id).value = value;
@@ -2076,6 +2110,95 @@
     renderEditor();
     recalculateAll();
   };
+
+  // Load the map library only when a visitor opens the picker.
+  const mapDialog = document.getElementById("birthplaceDialog");
+  const mapStatus = document.getElementById("birthplaceMapStatus");
+  const mapCenterButton = document.getElementById("pinMapCenter");
+  const mapApplyButton = document.getElementById("useBirthplacePin");
+  let map, pin, selection, leafletLoad;
+
+  function loadLeaflet() {
+    if (!leafletLoad) {
+      leafletLoad = new Promise((resolve, reject) => {
+        const base = "https://unpkg.com/leaflet@1.9.4/dist/";
+        const stylesheet = document.createElement("link");
+        stylesheet.rel = "stylesheet";
+        stylesheet.href = base + "leaflet.css";
+        stylesheet.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
+        stylesheet.crossOrigin = "anonymous";
+        const script = document.createElement("script");
+        script.src = base + "leaflet.js";
+        script.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
+        script.crossOrigin = "anonymous";
+        const loaded = element => new Promise((done, fail) => {
+          element.onload = done;
+          element.onerror = fail;
+          document.head.append(element);
+        });
+        Promise.all([loaded(stylesheet), loaded(script)]).then(() => resolve(window.L), error => {
+          stylesheet.remove();
+          script.remove();
+          leafletLoad = undefined;
+          reject(error);
+        });
+      });
+    }
+    return leafletLoad;
+  }
+
+  function selectBirthplace(point) {
+    selection = point.wrap();
+    pin.setLatLng(selection).addTo(map);
+    mapApplyButton.disabled = false;
+    mapStatus.textContent = selection.lat.toFixed(6) + ", " + selection.lng.toFixed(6);
+  }
+
+  document.getElementById("openBirthplaceMap").addEventListener("click", async () => {
+    mapDialog.showModal();
+    mapStatus.textContent = "Loading OpenStreetMap…";
+    mapCenterButton.disabled = true;
+    mapApplyButton.disabled = true;
+    selection = undefined;
+    try {
+      const leaflet = await loadLeaflet();
+      if (!mapDialog.open) return;
+      if (!map) {
+        map = leaflet.map("birthplaceMap", {scrollWheelZoom: false});
+        leaflet.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        }).on("tileerror", () => {
+          mapStatus.textContent = "Some map tiles could not load. You can retry or enter coordinates manually.";
+        }).addTo(map);
+        pin = leaflet.marker([0, 0], {draggable: true, title: "Birthplace pin"});
+        pin.on("dragend", () => selectBirthplace(pin.getLatLng()));
+        map.on("click", event => selectBirthplace(event.latlng));
+      }
+      pin.remove();
+      const lat = Number.parseFloat(document.getElementById("inLat").value);
+      const lon = Number.parseFloat(document.getElementById("inLon").value);
+      const hasCoordinates = Number.isFinite(lat) && Math.abs(lat) <= 85 && Number.isFinite(lon) && Math.abs(lon) <= 180;
+      map.invalidateSize();
+      map.setView(hasCoordinates ? [lat, lon] : [13.7563, 100.5018], hasCoordinates ? 12 : 6);
+      mapStatus.textContent = "Select where you were born.";
+      if (hasCoordinates) selectBirthplace(leaflet.latLng(lat, lon));
+      mapCenterButton.disabled = false;
+      map.getContainer().focus();
+    } catch {
+      mapStatus.textContent = "The map could not load. Close it to enter coordinates manually, or reopen it to retry.";
+    }
+  });
+  mapCenterButton.addEventListener("click", () => selectBirthplace(map.getCenter()));
+  mapApplyButton.addEventListener("click", () => {
+    if (!selection) return;
+    locationRequest++;
+    document.getElementById("inLat").value = selection.lat.toFixed(6);
+    document.getElementById("inLon").value = selection.lng.toFixed(6);
+    document.getElementById("cityQuickSelect").value = "";
+    engineStatus.textContent = "Birthplace coordinates set. Check the birth time zone before calculating.";
+    mapDialog.close();
+  });
 
   // Initialize empty state
   buildVargaButtons();
@@ -2109,6 +2232,13 @@
       <li><strong>Vimshottari</strong> The Moon’s birth nakshatra determines the first dasha ruler. The Moon’s progress through that nakshatra determines how much of the first period remains.</li>
       <li><strong>Thai chart rules</strong> Fun-Hora draws the round and square Thai charts and displays Taksa roles and วิษะ markers.</li>
     </ul>
+    <h3 id="how-special-lagnas-work">How Fun-Hora calculates Hora Lagna and Ghati Lagna</h3>
+    <p>Fun-Hora uses XALEN to find the last apparent sunrise at the birthplace before birth and calculate the Sun’s sidereal longitude at that sunrise. It uses the chart’s selected ayanamsa, including the Suriyayart offset when selected. A birth before dawn uses the previous sunrise.</p>
+    <ul>
+      <li><strong>Hora Lagna (HL)</strong> adds 30° for each hour elapsed since sunrise.</li>
+      <li><strong>Ghati Lagna (GL)</strong> adds 30° for each 24 minutes elapsed since sunrise.</li>
+    </ul>
+    <p>Both calculations wrap around the 360° zodiac. The chart shows the reference sunrise in UTC. Fun-Hora uses standard apparent sunrise at sea level and leaves these positions unavailable if no sunrise occurred in the previous 1.2 days. <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/1-5">Hora Lagna verses</a> · <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/6-10">Ghati Lagna verses</a></p>
     <h3>What the Thai Suriyayart setting changes</h3>
     <p>Use the switch beside the ayanamsa menu to compare XALEN Lahiri with Fun-Hora Suriyayart. When a chart is open, the switch recalculates it from the entered birth details.</p>
     <p>An ayanamsa is the angle subtracted from a tropical longitude to get a sidereal longitude. Fun-Hora’s Thai Suriyayart setting reduces XALEN’s Lahiri ayanamsa for the birth date by 0.592° (about 35′31″). For example, if Lahiri is 24.000°, Fun-Hora uses 23.408°. Subtracting a smaller angle moves the sidereal positions forward by 0.592° compared with Lahiri. A placement close to a sign, varga, or nakshatra boundary can therefore change.</p>
@@ -2118,7 +2248,7 @@
     <summary>About Fun-Hora and what’s new</summary>
     <p>Fun-Hora is a Jyotish chart workbench with Thai round and square charts, 20 vargas, Jaimini, and Vimshottari.</p>
     <p>Version 4.2 preserves full-precision positions, resolves birth times using historical zone rules, and saves calculation settings with each chart.</p>
-    <p>Chart calculations run in your browser. The optional Find button sends the location search to <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> via <a href="https://operations.osmfoundation.org/policies/nominatim/">Nominatim</a>.</p>
+    <p>Chart calculations run in your browser. The map picker loads map tiles from OpenStreetMap. The optional Find button sends the location search to <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> via <a href="https://operations.osmfoundation.org/policies/nominatim/">Nominatim</a>.</p>
   </details>
   <p>Astronomical calculations by <a href="https://github.com/vedika-io/xalen-ephemeris">XALEN Ephemeris</a> · <a href="./NOTICE">Notices</a> · <a href="./LICENSE">Apache 2.0</a></p>
 </footer>
