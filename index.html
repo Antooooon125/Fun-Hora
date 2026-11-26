@@ -408,6 +408,15 @@
       .card { border: 1px solid #999; background: #fff; break-inside: avoid; }
       #tab-grid { display: block !important; }
     }
+    .wheel-drishti, .wheel-drishti-controls { display: none; }
+    #workspaceContainer.show-wheel-drishti .wheel-drishti { display: inline; }
+    #workspaceContainer.show-wheel-drishti .wheel-drishti-controls {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.5em; margin: 0.5em 0;
+    }
+    .wheel-drishti-controls select { width: auto; max-width: 100%; }
+    #workspaceContainer.show-wheel-drishti .wheel-center-labels text {
+      paint-order: stroke; stroke: #121518; stroke-width: 3px; stroke-linejoin: round;
+    }
     .wheel-special-lagnas { display: none; }
     #workspaceContainer.show-wheel-special-lagnas .wheel-special-lagnas { display: inline; }
     .wheel-lagna-option { display: flex; align-items: center; gap: 0.6em; min-height: 44px; width: fit-content; }
@@ -562,6 +571,7 @@
     <p id="specialLagnasPositions"></p>
     <p id="specialLagnasSunrise"></p>
   </section>
+  <label class="wheel-lagna-option"><input id="showWheelDrishti" type="checkbox"> Show Jaimini Rasi Drishti on round wheels</label>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('tab-vargas', this)">1. Divisional Charts (All 20 D-Charts)</button>
     <button class="tab-btn" onclick="switchTab('tab-grid', this)">2. Core 4-Chart Grid (D1 • D9 • D10 • D24)</button>
@@ -1607,18 +1617,36 @@
       }).join("")}</g>`;
     }
 
+    const markerId = `${containerId}-drishti-arrow`;
+    const sourceId = `${containerId}-drishti-source`;
+    const summaryId = `${containerId}-drishti-summary`;
     const centerSvg = `
       <circle cx="${cx}" cy="${cy}" r="${rInner}" fill="#121518" stroke="#7fa68a" stroke-width="2" />
       <circle cx="${cx}" cy="${cy}" r="${rInner - 5}" fill="none" stroke="#323b44" stroke-width="1" stroke-dasharray="3,2" />
+      <g class="wheel-drishti"></g>
+      <g class="wheel-center-labels">
       <text x="${cx}" y="${cy - 22}" fill="#7fa68a" font-size="12.5" font-weight="700" text-anchor="middle">${title}</text>
       <text x="${cx}" y="${cy - 5}" fill="#9aa5b1" font-size="9.5" text-anchor="middle">${subtitle.slice(0, 32)}</text>
       <text x="${cx}" y="${cy + 14}" fill="#d4a359" font-size="11.5" font-weight="700" text-anchor="middle">ลัคนา: ${SIGNS[lagnaSign].th}</text>
       <text x="${cx}" y="${cy + 30}" fill="#9aa5b1" font-size="9.5" text-anchor="middle">(${SIGNS[lagnaSign].en})</text>
+      </g>
     `;
 
     document.getElementById(containerId).innerHTML = `
+      <div class="wheel-drishti-controls">
+        <label for="${sourceId}">${title} source sign</label>
+        <select id="${sourceId}">
+          ${SIGNS.map((sign, index) => `<option value="${index}" ${index === lagnaSign ? "selected" : ""}>${sign.en} · ${sign.th}</option>`).join("")}
+        </select>
+        <span id="${summaryId}" aria-live="polite"></span>
+      </div>
       <div class="thai-wheel-wrap">
         <svg viewBox="0 0 500 500" width="100%" height="auto">
+          <defs>
+            <marker id="${markerId}" viewBox="0 0 8 8" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" refX="8" refY="4" orient="auto">
+              <path d="M0 0 L8 4 L0 8 Z" fill="#ffa891" />
+            </marker>
+          </defs>
           <circle cx="${cx}" cy="${cy}" r="${rOuter + 4}" fill="none" stroke="#7fa68a" stroke-width="2" />
           ${wedgesSvg}
           ${centerSvg}
@@ -1626,6 +1654,24 @@
         </svg>
       </div>
     `;
+    const source = document.getElementById(sourceId);
+    const summary = document.getElementById(summaryId);
+    const layer = document.getElementById(containerId).querySelector(".wheel-drishti");
+
+    function showAspects() {
+      const sign = Number(source.value);
+      const targets = getRasiDrishtiSigns(sign);
+      const start = polarToXY(rInner - 5, -90 - sign * 30);
+      layer.innerHTML = targets.map(target => {
+        const end = polarToXY(rInner - 5, -90 - target * 30);
+        return `<line x1="${start.x.toFixed(1)}" y1="${start.y.toFixed(1)}"
+          x2="${end.x.toFixed(1)}" y2="${end.y.toFixed(1)}"
+          stroke="#ffa891" stroke-width="1.75" stroke-dasharray="4 3" marker-end="url(#${markerId})" />`;
+      }).join("");
+      summary.textContent = "Aspects " + targets.map(target => SIGNS[target].en).join(", ");
+    }
+    source.addEventListener("change", showAspects);
+    showAspects();
   }
 
   function buildVargaButtons() {
@@ -1679,6 +1725,7 @@
     }
     renderChartSettings();
     renderSpecialLagnas();
+    document.getElementById("showWheelDrishti").disabled = document.getElementById("chartStyleSelect").value !== "thai_round";
     const vObj = VARGAS.find(v => v.id === activeVarga);
     document.getElementById("vargaDomainLabel").textContent = vObj.desc;
     document.getElementById("activeVargaColHeader").textContent = `${activeVarga} Sign`;
@@ -2387,6 +2434,11 @@
 
   document.getElementById("showWheelSpecialLagnas").addEventListener("change", event => {
     document.getElementById("workspaceContainer").classList.toggle("show-wheel-special-lagnas", event.currentTarget.checked);
+  });
+
+  const showWheelDrishti = document.getElementById("showWheelDrishti");
+  showWheelDrishti.addEventListener("change", () => {
+    document.getElementById("workspaceContainer").classList.toggle("show-wheel-drishti", showWheelDrishti.checked);
   });
 
   // Initialize empty state
