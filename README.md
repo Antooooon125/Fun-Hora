@@ -18,7 +18,7 @@ The hosted Fun-Hora app is free to use for noncommercial purposes only. You may 
 
 ## Special Lagnas
 
-The **Special Lagnas** section shows Hora Lagna (HL) and Ghati Lagna (GL). Both start at the sidereal Sun's longitude at the most recent sunrise, using the selected ayanamsa. HL advances one sign per 60 minutes and GL advances one sign per 24 minutes. A pre-sunrise birth uses the previous sunrise. Fun-Hora uses XALEN's standard apparent sunrise at sea level and reports when no sunrise is available in the search window. [Hora Lagna verses](https://www.siva.sh/brihat-parashara-hora-shastra/5/1-5) · [Ghati Lagna verses](https://www.siva.sh/brihat-parashara-hora-shastra/5/6-10)
+The **Special Lagnas** section shows Hora Lagna (HL) and Ghati Lagna (GL). Both start at the sidereal Sun's longitude at the most recent sunrise, using the selected ayanamsa. HL advances one sign per 60 minutes and GL advances one sign per 24 minutes. A pre-sunrise birth uses the previous sunrise. XALEN modes use XALEN's standard apparent sunrise at sea level. The Suriyayatra workbook mode uses the workbook’s sunrise and solar longitude, including its whole-minute sunrise rounding. [Hora Lagna verses](https://www.siva.sh/brihat-parashara-hora-shastra/5/1-5) · [Ghati Lagna verses](https://www.siva.sh/brihat-parashara-hora-shastra/5/6-10)
 
 ## How Fun-Hora uses XALEN
 
@@ -29,13 +29,13 @@ Fun-Hora is the Jyotish chart app. XALEN Ephemeris is the reusable calculation l
 - **Vimshottari**. The Moon’s birth nakshatra determines the first dasha ruler. The Moon’s progress through that nakshatra determines how much of the first period remains.
 - **Thai chart rules**. Fun-Hora draws the round and square Thai charts and displays Taksa roles and วิษะ markers.
 
-### What the Thai Suriyayart setting changes
+### Suriyayatra workbook method
 
-Use the switch beside the ayanamsa menu to compare XALEN Lahiri with Fun-Hora Suriyayart. The switch recalculates an open chart from the entered birth details.
+Choose **Suriyayatra workbook (สุริยยาตร์)** or use the switch beside the calculation-method menu to compare with XALEN Lahiri. The workbook mode uses its standard natal settings for the ascendant, the seven classical planets, Rahu, Ketu, Uranus, and all 20 displayed divisional charts. Chart longitudes are calculated directly in the sidereal zodiac. The workbook’s D2 and node conventions are used automatically.
 
-An ayanamsa is the angle subtracted from a tropical longitude to get a sidereal longitude. Fun-Hora’s Thai Suriyayart setting reduces XALEN’s Lahiri ayanamsa for the birth date by 0.592° (about 35′31″). For example, if Lahiri is 24.000°, Fun-Hora uses 23.408°. Subtracting a smaller angle moves the sidereal positions forward by 0.592° compared with Lahiri. A placement close to a sign, varga, or nakshatra boundary can therefore change.
+HL and GL use Fun-Hora’s special-Lagna rules with the workbook’s sunrise and solar longitude. The reference workbook has no dedicated HL or GL outputs to compare against. Jaimini, Vimshottari, and other interpretation panels apply Fun-Hora’s existing rules to the selected chart.
 
-This fixed offset is Fun-Hora’s convention. Its agreement with a traditional Suriyayart reference has yet to be independently verified.
+The **Legacy Suriyayart offset** option retains the earlier XALEN Lahiri minus 0.592° calculation for saved charts. The original workbook is credited to Woraphon Maison (วรพล ไม้สน).
 
 Chart calculations run on your device. The optional **Find** button sends the location search text to OpenStreetMap's Nominatim service. Preset cities and manual coordinates work without that lookup. [Nominatim usage policy](https://operations.osmfoundation.org/policies/nominatim/)
 

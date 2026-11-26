@@ -1,11 +1,11 @@
 export const BODY_KEYS = ['Lagna', 'Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
-export const APP_VERSION = '4.2';
+export const APP_VERSION = '4.3';
 export const ENGINE_VERSION = '0.7.0';
 
 const HOUR = 3600000;
 const DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 const SETTINGS = {
-  ayanMode: ['lahiri', 'suriyayart', 'kp', 'raman'],
+  ayanMode: ['lahiri', 'suriyayart', 'suriyayatra', 'kp', 'raman'],
   nodeMode: ['true', 'mean'],
   chartStyle: ['thai_round', 'thai_square'],
   d2Mode: ['parashari', 'kashinatha', 'parivritti'],
@@ -16,7 +16,7 @@ export function longitudeParts(longitude) {
   const sign = Math.floor(longitude / 30);
   const degreesInSign = longitude - sign * 30;
   const deg = Math.floor(degreesInSign);
-  const min = Math.floor((degreesInSign - deg) * 60);
+  const min = Math.min(59, Math.floor((degreesInSign - deg) * 60 + 1e-9));
   return {sign, deg, min, degreesInSign};
 }
 
@@ -88,14 +88,15 @@ export function validateChart(chart) {
   const fail = () => { throw new Error('Invalid Fun-Hora chart file.'); };
   const integer = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
   if (!chart || ![undefined, 1, 2].includes(chart.schemaVersion) ||
-      !Array.isArray(chart.bodies) || chart.bodies.length !== BODY_KEYS.length ||
+      !Array.isArray(chart.bodies) || chart.bodies.length !== BODY_KEYS.length + (chart.settings?.ayanMode === "suriyayatra" ? 1 : 0) ||
       !integer(chart.weekday, 0, 6) || !Number.isFinite(chart.tz) || Math.abs(chart.tz) > 24 ||
       !Number.isFinite(chart.lat) || Math.abs(chart.lat) > 90 ||
       !Number.isFinite(chart.lon) || Math.abs(chart.lon) > 180 ||
       ![chart.name, chart.subtitle, chart.location].every(value => typeof value === 'string')) fail();
   civilTimestamp(chart.birthDate, chart.birthTime);
 
-  const bodies = BODY_KEYS.map(key => {
+  const keys = chart.settings?.ayanMode === "suriyayatra" ? [...BODY_KEYS, "Uranus"] : BODY_KEYS;
+  const bodies = keys.map(key => {
     const body = chart.bodies.find(entry => entry?.key === key);
     if (!body || !integer(body.sign, 0, 11) || !integer(body.deg, 0, 29) ||
         !integer(body.min, 0, 59) ||
@@ -115,7 +116,8 @@ export function validateChart(chart) {
     settings = chart.settings;
     if (!settings || !Object.entries(SETTINGS).every(([key, values]) => values.includes(settings[key])) ||
         !['appVersion', 'engineVersion', 'timeZone', 'utc'].every(key => typeof settings[key] === 'string') ||
-        !Number.isFinite(Date.parse(settings.utc)) || !Number.isFinite(settings.ayan)) fail();
+        !Number.isFinite(Date.parse(settings.utc)) ||
+        (settings.ayanMode === "suriyayatra" ? settings.ayan !== null : !Number.isFinite(settings.ayan))) fail();
   }
   return { ...chart, bodies, settings };
 }

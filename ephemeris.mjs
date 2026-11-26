@@ -1,4 +1,5 @@
 import init, { XalenWasm } from './pkg/xalen_wasm.js';
+import { calculateSuriyayatra } from './suriyayatra.mjs';
 
 const AYANAMSA_IDS = { lahiri: 0, suriyayart: 0, kp: 1, raman: 2 };
 const PLANET_IDS = { Sun: 0, Moon: 1, Mercury: 2, Venus: 3, Mars: 4, Jupiter: 5, Saturn: 6 };
@@ -12,8 +13,12 @@ export async function loadEphemeris(moduleOptions) {
   await init(moduleOptions);
   const engine = new XalenWasm();
 
-  return function calculateEphemeris({year, month, day, utcHours, lat, lon, ayanMode, nodeMode}) {
+  return function calculateEphemeris({year, month, day, utcHours, lat, lon, ayanMode, nodeMode, utcOffset}) {
     const jd = XalenWasm.julianDay(year, month, day, 0) + utcHours / 24;
+    if (ayanMode === 'suriyayatra') {
+      if (!Number.isFinite(utcOffset)) throw new Error('Suriyayatra requires the local UTC offset.');
+      return calculateSuriyayatra(jd, lat, lon, utcOffset);
+    }
     const ayanId = AYANAMSA_IDS[ayanMode];
     const adjustment = SIDEREAL_OFFSET[ayanMode] ?? 0;
     const ayan = XalenWasm.ayanamsaDeg(jd, ayanId) + adjustment;

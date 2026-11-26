@@ -37,8 +37,9 @@ jobs:
           wasm-bindgen --target web --out-dir site/pkg target/wasm32-unknown-unknown/release/xalen_wasm.wasm
       - name: Stage and verify the web app
         run: |
-          cp index.html ephemeris.mjs chart-data.mjs thai-places.json LICENSE NOTICE site/
+          cp index.html ephemeris.mjs suriyayatra.mjs chart-data.mjs thai-places.json LICENSE NOTICE site/
           node tests/fun-hora-chart-data.mjs
+          node tests/fun-hora-suriyayatra.mjs
           node tests/fun-hora-wasm.mjs
       - uses: actions/upload-pages-artifact@v3
         with:

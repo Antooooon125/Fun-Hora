@@ -419,7 +419,7 @@
 
 <header>
   <div>
-    <h1>Fun-Hora <span style="font-size:0.75rem; color:var(--accent-gold);">v4.2</span></h1>
+    <h1>Fun-Hora <span style="font-size:0.75rem; color:var(--accent-gold);">v4.3</span></h1>
     <p>Jyotish charts · 20 vargas · Jaimini · Vimshottari</p>
     <p>Developed in part by <strong>Amnuayvit Thitibordin</strong>.</p>
     <p><strong>Work in progress.</strong> Calculations and displays may contain errors. <a href="#fun-hora-use" style="color:var(--accent-blue)">Free for noncommercial use</a>.</p>
@@ -433,12 +433,13 @@
   <div class="toolbar">
     <select id="ayanamshaSelect">
       <option value="lahiri" selected>Ayanamsha: XALEN Lahiri</option>
-      <option value="suriyayart">Ayanamsha: Fun-Hora Suriyayart (สุริยยาตร์)</option>
+      <option value="suriyayatra">Method: Suriyayatra workbook (สุริยยาตร์)</option>
+      <option value="suriyayart">Ayanamsha: Legacy Suriyayart offset</option>
       <option value="kp">Ayanamsha: Krishnamurti (KP)</option>
       <option value="raman">Ayanamsha: B.V. Raman</option>
     </select>
     <button type="button" id="suriyayartToggle" title="Recalculate from the birth details using the other ayanamsa">
-      Switch to Fun-Hora Suriyayart
+      Switch to Suriyayatra workbook
     </button>
     <select id="nodeModeSelect">
       <option value="true" selected>Nodes: True Rahu / Vedic Ketu</option>
@@ -807,6 +808,8 @@
 <script type="module">
   import { APP_VERSION, ENGINE_VERSION, longitudeParts, resolveBirthTime, validateChart, parseBirthDate, displayBirthDate, parseBirthTime } from "./chart-data.mjs";
 
+  import { suriyayatraDivision } from "./suriyayatra.mjs";
+
   const settingControls = {
     ayanMode: "ayanamshaSelect",
     nodeMode: "nodeModeSelect",
@@ -820,10 +823,11 @@
 
   function updateSuriyayartToggle() {
     const mode = ayanamsaSelect.value;
-    suriyayartToggle.hidden = mode !== "lahiri" && mode !== "suriyayart";
-    suriyayartToggle.textContent = mode === "suriyayart"
-      ? "Switch to XALEN Lahiri"
-      : "Switch to Fun-Hora Suriyayart";
+    const workbookMode = mode === "suriyayatra";
+    suriyayartToggle.hidden = mode !== "lahiri" && !workbookMode;
+    suriyayartToggle.textContent = workbookMode ? "Switch to XALEN Lahiri" : "Switch to Suriyayatra workbook";
+    document.getElementById("nodeModeSelect").disabled = workbookMode;
+    document.getElementById("d2ModeSelect").disabled = workbookMode;
   }
 
   function readSettings() {
@@ -858,10 +862,12 @@
     }
     const {utc, timeZone, ayanMode, ayan, nodeMode, d2Mode, karakaMode, engineVersion, appVersion} = state.settings;
     const offsetLabel = "UTC" + (state.tz >= 0 ? "+" : "") + Number(state.tz.toFixed(5));
-    details.textContent = [utc, timeZone || "Manual offset", offsetLabel,
-      ayanMode.toUpperCase() + " " + ayan.toFixed(4) + "°",
-      (nodeMode === "true" ? "True" : "Mean") + " Rahu", "D2 " + d2Mode,
-      karakaMode + " karakas", "Fun-Hora " + appVersion, "XALEN " + engineVersion].join(" · ");
+    const method = ayanMode === "suriyayatra"
+      ? ["Suriyayatra workbook", "Workbook nodes and vargas"]
+      : [ayanMode.toUpperCase() + " " + ayan.toFixed(4) + "°",
+        (nodeMode === "true" ? "True" : "Mean") + " Rahu", "D2 " + d2Mode, "XALEN " + engineVersion];
+    details.textContent = [utc, timeZone || "Manual offset", offsetLabel, ...method,
+      karakaMode + " karakas", "Fun-Hora " + appVersion].join(" · ");
   }
   let calculateEphemeris;
   const engineStatus = document.getElementById("calcStatusText");
@@ -1199,11 +1205,11 @@
     try {
       ephemeris = calculateEphemeris({
         year: Y, month: M, day: D, utcHours: utHours,
-        lat: latVal, lon: lonVal, ayanMode, nodeMode
+        lat: latVal, lon: lonVal, ayanMode, nodeMode, utcOffset: tzVal
       });
     } catch (error) {
       console.error(error);
-      engineStatus.textContent = "XALEN could not calculate these birth details.";
+      engineStatus.textContent = "The selected method could not calculate these birth details.";
       return;
     }
     const { ayan, siderealMap, speedMap, specialLagnas } = ephemeris;
@@ -1221,6 +1227,9 @@
       { key: "Ketu",    label: "Ketu (๙)",    thNum: "๙" }
     ];
 
+    if (ayanMode === "suriyayatra") {
+      bodyMeta.push({ key: "Uranus", label: "Uranus (๐)", thNum: "๐" });
+    }
     const bodies = bodyMeta.map(bm => {
       const lon = siderealMap[bm.key];
       const {sign, deg, min, degreesInSign} = longitudeParts(lon);
@@ -1652,7 +1661,9 @@
       const degFloat = b.longitude === undefined ? b.deg + b.min / 60 : longitudeParts(b.longitude).degreesInSign;
       const vargaSigns = {};
       VARGAS.forEach(v => {
-        vargaSigns[v.id] = calcVargaSign(v.id, b.sign, degFloat);
+        vargaSigns[v.id] = state.settings?.ayanMode === "suriyayatra"
+          ? suriyayatraDivision(Number(v.id.slice(1)), b.sign, degFloat)
+          : calcVargaSign(v.id, b.sign, degFloat);
       });
       return {
         ...b, degFloat, vargaSigns,
@@ -2075,7 +2086,7 @@
       "Debilitated": 0.0
     };
 
-    const grahas = computed.filter(c => c.key !== "Lagna");
+    const grahas = computed.filter(c => c.key !== "Lagna" && c.key !== "Uranus");
     document.getElementById("vishwaTableBody").innerHTML = grahas.map(g => {
       let ownExalt16 = 0;
       let ownExalt20 = 0;
@@ -2342,7 +2353,7 @@
   initializeEphemeris();
   suriyayartToggle.addEventListener("click", () => {
     const previousMode = ayanamsaSelect.value;
-    ayanamsaSelect.value = previousMode === "suriyayart" ? "lahiri" : "suriyayart";
+    ayanamsaSelect.value = previousMode === "suriyayatra" ? "lahiri" : "suriyayatra";
     if (state) {
       const previousChart = state;
       window.calculateFromBirthInput();
@@ -2370,16 +2381,15 @@
       <li><strong>Thai chart rules</strong> Fun-Hora draws the round and square Thai charts and displays Taksa roles and วิษะ markers.</li>
     </ul>
     <h3 id="how-special-lagnas-work">How Fun-Hora calculates Hora Lagna and Ghati Lagna</h3>
-    <p>Fun-Hora uses XALEN to find the last apparent sunrise at the birthplace before birth and calculate the Sun’s sidereal longitude at that sunrise. It uses the chart’s selected ayanamsa, including the Suriyayart offset when selected. A birth before dawn uses the previous sunrise.</p>
+    <p>The Suriyayatra workbook method calculates sunrise and the Sun’s sidereal longitude using the workbook model. XALEN methods use XALEN’s sunrise and solar calculations. A birth before dawn uses the previous sunrise.</p>
     <ul>
       <li><strong>Hora Lagna (HL)</strong> adds 30° for each hour elapsed since sunrise.</li>
       <li><strong>Ghati Lagna (GL)</strong> adds 30° for each 24 minutes elapsed since sunrise.</li>
     </ul>
-    <p>Both calculations wrap around the 360° zodiac. The chart shows the reference sunrise in UTC. Fun-Hora uses standard apparent sunrise at sea level and leaves these positions unavailable if no sunrise occurred in the previous 1.2 days. <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/1-5">Hora Lagna verses</a> · <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/6-10">Ghati Lagna verses</a></p>
-    <h3>What the Thai Suriyayart setting changes</h3>
-    <p>Use the switch beside the ayanamsa menu to compare XALEN Lahiri with Fun-Hora Suriyayart. When a chart is open, the switch recalculates it from the entered birth details.</p>
-    <p>An ayanamsa is the angle subtracted from a tropical longitude to get a sidereal longitude. Fun-Hora’s Thai Suriyayart setting reduces XALEN’s Lahiri ayanamsa for the birth date by 0.592° (about 35′31″). For example, if Lahiri is 24.000°, Fun-Hora uses 23.408°. Subtracting a smaller angle moves the sidereal positions forward by 0.592° compared with Lahiri. A placement close to a sign, varga, or nakshatra boundary can therefore change.</p>
-    <p>This fixed offset is Fun-Hora’s convention. Its agreement with a traditional Suriyayart reference has yet to be independently verified.</p>
+    <p>Both calculations wrap around the 360° zodiac. The chart shows the reference sunrise in UTC. The workbook method rounds sunrise to a civil minute. XALEN uses apparent sunrise at sea level. <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/1-5">Hora Lagna verses</a> · <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/6-10">Ghati Lagna verses</a></p>
+    <h3>Suriyayatra workbook method</h3>
+    <p>This method follows the workbook’s standard natal configuration for longitudes, Lagna, nodes, and all 20 displayed divisional charts. Its longitudes are computed directly in the sidereal zodiac. Use the switch to compare with XALEN Lahiri.</p>
+    <p>The legacy Suriyayart offset remains available for earlier saved charts. That setting uses XALEN Lahiri minus 0.592°.</p>
   </section>
   <details>
     <summary>About Fun-Hora and what’s new</summary>
