@@ -584,6 +584,7 @@
         <label>Transit date (DD/MM/YYYY)<input id="transitDate" placeholder="DD/MM/YYYY" inputmode="numeric" required></label>
         <label>Local time (24-hour)<input id="transitTime" placeholder="18:30" inputmode="numeric" required></label>
         <button type="submit">Calculate transits</button>
+        <button id="transitUseNow" type="button">Use now</button>
       </div>
     </form>
     <label class="wheel-lagna-option"><input id="showTransit" type="checkbox" disabled> Show transits on D1</label>
@@ -1512,6 +1513,7 @@
     const positions = document.getElementById("transitPositions");
     const submit = document.getElementById("transitForm").querySelector("button");
     submit.disabled = !supported || !calculateEphemeris;
+    document.getElementById("transitUseNow").disabled = submit.disabled;
     checkbox.disabled = true;
     positions.hidden = true;
     status.textContent = "";
@@ -1521,7 +1523,7 @@
       const {date, time} = transitTime;
       const choices = resolveBirthTime(date, time, zone, state.tz);
       if (!choices.length) throw new Error("This local time does not exist due to a clock change. Choose another time.");
-      const {utc, offset} = choices[0];
+      const {utc, offset} = choices.find(choice => choice.utc === transitTime.utc) ?? choices[0];
       const instant = new Date(utc);
       const {siderealMap} = calculateEphemeris({
         year: instant.getUTCFullYear(), month: instant.getUTCMonth() + 1, day: instant.getUTCDate(),
@@ -1535,7 +1537,7 @@
         `<tr><td>${key}</td><td>${SIGNS[sign].en} ${deg}°${String(min).padStart(2, "0")}′</td><td>${mod12(sign - lagnaSign) + 1}</td></tr>`
       ).join("");
       status.textContent = `Transit: ${displayBirthDate(date)} ${time} · ${utc.slice(0, 16).replace("T", " ")} UTC`
-        + (choices.length > 1 ? " · First occurrence of this local time" : "");
+        + (choices.length > 1 ? (utc === choices[0].utc ? " · First occurrence" : " · Second occurrence") : "");
       positions.hidden = false;
       checkbox.disabled = false;
       return checkbox.checked ? transit : [];
@@ -2583,12 +2585,14 @@
     if (birthDateCalendar.value) birthDateInput.value = displayBirthDate(birthDateCalendar.value);
   });
 
-  document.getElementById("inTime").addEventListener("input", event => {
+  function formatTimeField(event) {
     const input = event.currentTarget;
     if (event.inputType?.startsWith("delete") || event.isComposing || input.selectionEnd !== input.value.length) return;
     const formatted = formatBirthTimeInput(input.value);
     if (formatted !== input.value) input.value = formatted;
-  });
+  }
+  document.getElementById("inTime").addEventListener("input", formatTimeField);
+  document.getElementById("transitTime").addEventListener("input", formatTimeField);
 
   document.getElementById("showWheelSpecialLagnas").addEventListener("change", event => {
     document.getElementById("workspaceContainer").classList.toggle("show-wheel-special-lagnas", event.currentTarget.checked);
@@ -2601,15 +2605,42 @@
 
   document.getElementById("vimPratyantarBhukti").addEventListener("change", renderVimPratyantardashas);
 
+  function applyTransitTime(date, time, utc) {
+    transitTime = {date, time, utc};
+    document.getElementById("showTransit").checked = true;
+    recalculateAll();
+  }
+
+  document.getElementById("transitUseNow").addEventListener("click", () => {
+    if (!state) return;
+    const now = new Date(Math.floor(Date.now() / 60000) * 60000);
+    const zone = state.settings?.timeZone;
+    let date, time;
+    if (zone) {
+      const formatter = new Intl.DateTimeFormat("en-GB", {
+        timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+      });
+      const parts = Object.fromEntries(formatter.formatToParts(now).map(({type, value}) => [type, value]));
+      date = `${parts.year}-${parts.month}-${parts.day}`;
+      time = `${parts.hour}:${parts.minute}`;
+    } else {
+      const local = new Date(now.getTime() + state.tz * 3600000).toISOString();
+      date = local.slice(0, 10);
+      time = local.slice(11, 16);
+    }
+    document.getElementById("transitDate").value = displayBirthDate(date);
+    document.getElementById("transitTime").value = time;
+    applyTransitTime(date, time, now.toISOString());
+  });
+
   document.getElementById("transitForm").addEventListener("submit", event => {
     event.preventDefault();
     const status = document.getElementById("transitStatus");
     try {
       const date = parseBirthDate(document.getElementById("transitDate").value);
       const time = parseBirthTime(document.getElementById("transitTime").value);
-      transitTime = {date, time};
-      document.getElementById("showTransit").checked = true;
-      recalculateAll();
+      applyTransitTime(date, time);
     } catch {
       status.textContent = "Enter a valid transit date (DD/MM/YYYY) and 24-hour time.";
     }
