@@ -434,7 +434,6 @@
     <select id="ayanamshaSelect">
       <option value="lahiri" selected>Ayanamsha: XALEN Lahiri</option>
       <option value="suriyayatra">Method: Suriyayatra workbook (สุริยยาตร์)</option>
-      <option value="suriyayart">Ayanamsha: Legacy Suriyayart offset</option>
       <option value="kp">Ayanamsha: Krishnamurti (KP)</option>
       <option value="raman">Ayanamsha: B.V. Raman</option>
     </select>
@@ -2206,15 +2205,20 @@
       document.getElementById(id).value = value;
     }
     const defaults = {ayanMode: "lahiri", nodeMode: "true", d2Mode: "parashari", karakaMode: "7", chartStyle: "thai_round"};
+    const usesRetiredMethod = chart.settings?.ayanMode === "suriyayart";
     for (const [key, id] of Object.entries(settingControls)) {
-      document.getElementById(id).value = chart.settings?.[key] ?? defaults[key];
+      document.getElementById(id).value = key === "ayanMode" && usesRetiredMethod
+        ? "suriyayatra"
+        : chart.settings?.[key] ?? defaults[key];
     }
     document.getElementById("chartSubtitle").textContent = chart.subtitle;
     document.getElementById("chartSettings").hidden = false;
     document.getElementById("emptyStateBanner").style.display = "none";
     document.getElementById("workspaceContainer").style.display = "block";
     updateSuriyayartToggle();
-    engineStatus.textContent = "Saved chart opened.";
+    engineStatus.textContent = usesRetiredMethod
+      ? "Saved placements opened. Recalculate to use the Suriyayatra workbook method."
+      : "Saved chart opened.";
     renderEditor();
     recalculateAll();
   };
@@ -2389,7 +2393,6 @@
     <p>Both calculations wrap around the 360° zodiac. The chart shows the reference sunrise in UTC. The workbook method rounds sunrise to a civil minute. XALEN uses apparent sunrise at sea level. <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/1-5">Hora Lagna verses</a> · <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/6-10">Ghati Lagna verses</a></p>
     <h3>Suriyayatra workbook method</h3>
     <p>This method follows the workbook’s standard natal configuration for longitudes, Lagna, nodes, and all 20 displayed divisional charts. Its longitudes are computed directly in the sidereal zodiac. Use the switch to compare with XALEN Lahiri.</p>
-    <p>The legacy Suriyayart offset remains available for earlier saved charts. That setting uses XALEN Lahiri minus 0.592°.</p>
   </section>
   <details>
     <summary>About Fun-Hora and what’s new</summary>

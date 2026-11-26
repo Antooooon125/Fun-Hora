@@ -35,7 +35,7 @@ Choose **Suriyayatra workbook (สุริยยาตร์)** or use the swit
 
 HL and GL use Fun-Hora’s special-Lagna rules with the workbook’s sunrise and solar longitude. The reference workbook has no dedicated HL or GL outputs to compare against. Jaimini, Vimshottari, and other interpretation panels apply Fun-Hora’s existing rules to the selected chart.
 
-The **Legacy Suriyayart offset** option retains the earlier XALEN Lahiri minus 0.592° calculation for saved charts. The original workbook is credited to Woraphon Maison (วรพล ไม้สน).
+The original workbook is credited to Woraphon Maison (วรพล ไม้สน).
 
 Chart calculations run on your device. The optional **Find** button sends the location search text to OpenStreetMap's Nominatim service. Preset cities and manual coordinates work without that lookup. [Nominatim usage policy](https://operations.osmfoundation.org/policies/nominatim/)
 

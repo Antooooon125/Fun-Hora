@@ -33,9 +33,7 @@ assert.notEqual(chart.siderealMap.Rahu, calculate({ ...birth, nodeMode: 'mean' }
 for (const [ayanMode, id] of [['kp', 1], ['raman', 2]]) {
   assert.equal(calculate({ ...birth, ayanMode }).ayan, XalenWasm.ayanamsaDeg(jd, id));
 }
-const suriyayart = calculate({ ...birth, ayanMode: 'suriyayart' });
-assert(Math.abs(suriyayart.ayan - (chart.ayan - 0.592)) < 1e-8);
-assert(Math.abs(suriyayart.siderealMap.Mars - normalize(chart.siderealMap.Mars + 0.592)) < 1e-8);
+assert.throws(() => calculate({ ...birth, ayanMode: 'suriyayart' }), /Unknown calculation method/);
 console.log('Verified XALEN positions, speeds, ascendant, UTC rollover, ayanamsas, and true and mean nodes.');
 
 const sunrise = engine.precedingSunrise(jd, birth.lat, birth.lon);
@@ -47,7 +45,6 @@ assert(Math.abs(chart.specialLagnas.hora - normalize(sunriseSun + 30 * hoursAfte
 assert(Math.abs(chart.specialLagnas.ghati - normalize(sunriseSun + 75 * hoursAfterSunrise)) < 1e-8);
 const midday = calculate({ ...birth, utcHours: 5 });
 assert.match(midday.specialLagnas.sunriseUtc, /^1990-01-14T/);
-assert(Math.abs(suriyayart.specialLagnas.ghati - normalize(chart.specialLagnas.ghati + 0.592)) < 1e-8);
 const polar = calculate({ ...birth, month: 6, day: 21, utcHours: 12, lat: 89, lon: 0 });
 assert.equal(polar.specialLagnas, null);
 engine.free();
