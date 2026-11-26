@@ -408,6 +408,11 @@
       .card { border: 1px solid #999; background: #fff; break-inside: avoid; }
       #tab-grid { display: block !important; }
     }
+    .transit-fields { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; }
+    .transit-fields label { display: grid; gap: 0.25rem; }
+    .transit-fields input { width: 9rem; max-width: 100%; }
+    .transit-cell { color: #8de4d8; font-weight: 700; }
+    .transit-table { overflow-x: auto; }
     .wheel-drishti, .wheel-drishti-controls { display: none; }
     #workspaceContainer.show-wheel-drishti .wheel-drishti { display: inline; }
     #workspaceContainer.show-wheel-drishti .wheel-drishti-controls {
@@ -571,6 +576,28 @@
     <p id="specialLagnasPositions"></p>
     <p id="specialLagnasSunrise"></p>
   </section>
+  <details class="card" id="d1TransitPanel">
+    <summary>D1 transits</summary>
+    <p id="transitZone"></p>
+    <form id="transitForm">
+      <div class="transit-fields">
+        <label>Transit date (DD/MM/YYYY)<input id="transitDate" placeholder="DD/MM/YYYY" inputmode="numeric" required></label>
+        <label>Local time (24-hour)<input id="transitTime" placeholder="18:30" inputmode="numeric" required></label>
+        <button type="submit">Calculate transits</button>
+      </div>
+    </form>
+    <label class="wheel-lagna-option"><input id="showTransit" type="checkbox" disabled> Show transits on D1</label>
+    <p id="transitStatus" role="status"></p>
+    <details id="transitPositions" hidden>
+      <summary>Exact transit positions</summary>
+      <div class="transit-table">
+        <table>
+          <thead><tr><th>Body</th><th>Sidereal position</th><th>Natal house</th></tr></thead>
+          <tbody id="transitPositionsBody"></tbody>
+        </table>
+      </div>
+    </details>
+  </details>
   <label class="wheel-lagna-option"><input id="showWheelDrishti" type="checkbox"> Show Jaimini Rasi Drishti on round wheels</label>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('tab-vargas', this)">1. Divisional Charts (All 20 D-Charts)</button>
@@ -990,6 +1017,7 @@
   ];
 
   let state = null;
+  let transitTime = null;
   let activeVarga = "D1";
   let selectedMahaIdx = null;
   let selectedVimMahaIdx = null;
@@ -1110,6 +1138,8 @@
     locationRequest++;
     birthplaceHint.textContent = "";
     state = null;
+    transitTime = null;
+    document.getElementById("showTransit").checked = false;
     document.getElementById("inZone").value = "";
     document.getElementById("birthOccurrenceField").hidden = true;
     document.getElementById("chartSettings").hidden = true;
@@ -1470,10 +1500,55 @@
     return "Great Enemy";
   }
 
-  function renderChartBox(containerId, title, subtitle, lagnaSign, placements, specialLagnas) {
+  function getD1Transits() {
+    const zone = state.settings?.timeZone || "";
+    const mode = state.settings?.ayanMode;
+    const supported = ["suriyayatra", "lahiri", "kp", "raman"].includes(mode);
+    document.getElementById("transitZone").textContent = supported
+      ? "Birthplace time zone: " + (zone || ("UTC" + (state.tz >= 0 ? "+" : "") + state.tz))
+      : "Recalculate this natal chart to use transits.";
+    const checkbox = document.getElementById("showTransit");
+    const status = document.getElementById("transitStatus");
+    const positions = document.getElementById("transitPositions");
+    const submit = document.getElementById("transitForm").querySelector("button");
+    submit.disabled = !supported || !calculateEphemeris;
+    checkbox.disabled = true;
+    positions.hidden = true;
+    status.textContent = "";
+    if (!transitTime || submit.disabled) return [];
+
+    try {
+      const {date, time} = transitTime;
+      const choices = resolveBirthTime(date, time, zone, state.tz);
+      if (!choices.length) throw new Error("This local time does not exist due to a clock change. Choose another time.");
+      const {utc, offset} = choices[0];
+      const instant = new Date(utc);
+      const {siderealMap} = calculateEphemeris({
+        year: instant.getUTCFullYear(), month: instant.getUTCMonth() + 1, day: instant.getUTCDate(),
+        utcHours: instant.getUTCHours() + instant.getUTCMinutes() / 60 + instant.getUTCSeconds() / 3600,
+        lat: state.lat, lon: state.lon, utcOffset: offset, ayanMode: mode, nodeMode: state.settings.nodeMode
+      });
+      const transit = state.bodies.filter(body => body.key !== "Lagna" && Number.isFinite(siderealMap[body.key]))
+        .map(body => ({key: body.key, thNum: body.thNum, ...longitudeParts(siderealMap[body.key])}));
+      const lagnaSign = state.bodies[0].sign;
+      document.getElementById("transitPositionsBody").innerHTML = transit.map(({key, sign, deg, min}) =>
+        `<tr><td>${key}</td><td>${SIGNS[sign].en} ${deg}°${String(min).padStart(2, "0")}′</td><td>${mod12(sign - lagnaSign) + 1}</td></tr>`
+      ).join("");
+      status.textContent = `Transit: ${displayBirthDate(date)} ${time} · ${utc.slice(0, 16).replace("T", " ")} UTC`
+        + (choices.length > 1 ? " · First occurrence of this local time" : "");
+      positions.hidden = false;
+      checkbox.disabled = false;
+      return checkbox.checked ? transit : [];
+    } catch (error) {
+      status.textContent = error.message;
+      return [];
+    }
+  }
+
+  function renderChartBox(containerId, title, subtitle, lagnaSign, placements, specialLagnas, transit = []) {
     const style = document.getElementById("chartStyleSelect").value;
     if (style === "thai_round") {
-      renderThaiRoundWheel(containerId, title, subtitle, lagnaSign, placements, specialLagnas);
+      renderThaiRoundWheel(containerId, title, subtitle, lagnaSign, placements, specialLagnas, transit);
       return;
     }
 
@@ -1499,6 +1574,8 @@
         const here = placements.filter(p => p.sign === sIdx);
         const tags = here.map(p => `<span class="planet-tag" style="${p.key === 'Lagna' || p.key === 'D9L' ? 'border-color:var(--accent-sage); color:var(--accent-sage);' : ''}">${p.thNum}${p.motion ? '(' + p.motion + ')' : ''}</span>`).join("");
 
+        const transitHere = transit.filter(p => p.sign === sIdx);
+        const transitRow = transitHere.length ? `<div class="transit-cell">T: ${transitHere.map(p => p.thNum).join(" ")}</div>` : "";
         html += `
           <div class="rashi-cell ${isLagna ? 'lagna-cell' : ''}">
             <div class="rashi-header">
@@ -1506,6 +1583,7 @@
               <span style="color:var(--accent-gold);">${THAI_BHAVAS[houseIdx]}</span>
             </div>
             <div class="rashi-planets">${tags}</div>
+            ${transitRow}
           </div>
         `;
       }
@@ -1514,7 +1592,7 @@
     document.getElementById(containerId).innerHTML = html;
   }
 
-  function renderThaiRoundWheel(containerId, title, subtitle, lagnaSign, placements, specialLagnas) {
+  function renderThaiRoundWheel(containerId, title, subtitle, lagnaSign, placements, specialLagnas, transit) {
     const cx = 250, cy = 250;
     const rOuter = 236;
     const rHeader = 194;
@@ -1529,6 +1607,8 @@
     }
 
     let wedgesSvg = "";
+    let transitWedges = "";
+    const rTransit = 281;
 
     for (let sIdx = 0; sIdx < 12; sIdx++) {
       const centerDeg = -90 - sIdx * 30;
@@ -1541,6 +1621,25 @@
       const p2Mid = polarToXY(rHeader, endDeg);
       const p1In  = polarToXY(rInner, startDeg);
       const p2In  = polarToXY(rInner, endDeg);
+
+      if (transit.length) {
+        const start = polarToXY(rTransit, startDeg);
+        const end = polarToXY(rTransit, endDeg);
+        const bodies = transit.filter(p => p.sign === sIdx);
+        const label = polarToXY((rTransit + rOuter) / 2, centerDeg);
+        const tokens = bodies.map(p => p.thNum);
+        const rows = [tokens.slice(0, 5), tokens.slice(5)].filter(row => row.length);
+        const labels = rows.map((row, index) => `<tspan x="${label.x}" y="${label.y + (index - (rows.length - 1) / 2) * 16}">${row.join(" ")}</tspan>`).join("");
+        transitWedges += `<g class="transit-sector">
+          <path d="M ${p1Out.x} ${p1Out.y} L ${start.x} ${start.y}
+            A ${rTransit} ${rTransit} 0 0 1 ${end.x} ${end.y} L ${p2Out.x} ${p2Out.y}
+            A ${rOuter} ${rOuter} 0 0 0 ${p1Out.x} ${p1Out.y} Z"
+            fill="#182d2b" stroke="#426a63" />
+          ${bodies.length ? `<title>Transit · ${bodies.map(p => p.key).join(", ")}</title>
+            <text x="${label.x}" y="${label.y}" fill="#9cf0e2" font-size="16" font-weight="700"
+              text-anchor="middle" dominant-baseline="middle">${labels}</text>` : ""}
+        </g>`;
+      }
 
       const isLagna = sIdx === lagnaSign;
       const bhavaIdx = mod12(sIdx - lagnaSign);
@@ -1647,13 +1746,15 @@
         </select>
         <span id="${summaryId}" aria-live="polite"></span>
       </div>
+      ${transit.length ? '<p class="transit-cell">Outer ring · transits</p>' : ""}
       <div class="thai-wheel-wrap">
-        <svg viewBox="0 0 500 500" width="100%" height="auto">
+        <svg viewBox="${transit.length ? "-39 -39 578 578" : "0 0 500 500"}" width="100%" height="auto">
           <defs>
             <marker id="${markerId}" viewBox="0 0 8 8" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" refX="8" refY="4" orient="auto">
               <path d="M0 0 L8 4 L0 8 Z" fill="#ffa891" />
             </marker>
           </defs>
+          ${transitWedges}
           <circle cx="${cx}" cy="${cy}" r="${rOuter + 4}" fill="none" stroke="#7fa68a" stroke-width="2" />
           ${wedgesSvg}
           ${centerSvg}
@@ -1754,11 +1855,12 @@
       };
     });
 
+    const transit = getD1Transits();
     const lagnaVargaSign = computed[0].vargaSigns[activeVarga];
     const placements = computed.map(c => ({
       key: c.key, thNum: c.thNum, motion: c.motion, sign: c.vargaSigns[activeVarga]
     }));
-    renderChartBox("singleChartHost", vObj.name.split(" ")[0], `30° ÷ ${activeVarga.replace('D','')}`, lagnaVargaSign, placements, activeVarga === "D1" ? state.specialLagnas : undefined);
+    renderChartBox("singleChartHost", vObj.name.split(" ")[0], `30° ÷ ${activeVarga.replace('D','')}`, lagnaVargaSign, placements, activeVarga === "D1" ? state.specialLagnas : undefined, activeVarga === "D1" ? transit : []);
 
     document.getElementById("vargaTableBody").innerHTML = computed.map(c => {
       const sIdx = c.vargaSigns[activeVarga];
@@ -1789,7 +1891,7 @@
       const meta = VARGAS.find(v => v.id === vId);
       const lSign = computed[0].vargaSigns[vId];
       const pl = computed.map(c => ({ key: c.key, thNum: c.thNum, motion: c.motion, sign: c.vargaSigns[vId] }));
-      renderChartBox(`grid${vId}Host`, meta.name.split(" ")[0], meta.desc.split("—")[1].trim(), lSign, pl, vId === "D1" ? state.specialLagnas : undefined);
+      renderChartBox(`grid${vId}Host`, meta.name.split(" ")[0], meta.desc.split("—")[1].trim(), lSign, pl, vId === "D1" ? state.specialLagnas : undefined, vId === "D1" ? transit : []);
     });
 
     runJaiminiAnalysis(computed);
@@ -2320,6 +2422,8 @@
     }
     locationRequest++;
     birthplaceHint.textContent = "";
+    transitTime = null;
+    document.getElementById("showTransit").checked = false;
     state = chart;
     selectedMahaIdx = null;
     selectedVimMahaIdx = null;
@@ -2496,6 +2600,21 @@
   });
 
   document.getElementById("vimPratyantarBhukti").addEventListener("change", renderVimPratyantardashas);
+
+  document.getElementById("transitForm").addEventListener("submit", event => {
+    event.preventDefault();
+    const status = document.getElementById("transitStatus");
+    try {
+      const date = parseBirthDate(document.getElementById("transitDate").value);
+      const time = parseBirthTime(document.getElementById("transitTime").value);
+      transitTime = {date, time};
+      document.getElementById("showTransit").checked = true;
+      recalculateAll();
+    } catch {
+      status.textContent = "Enter a valid transit date (DD/MM/YYYY) and 24-hour time.";
+    }
+  });
+  document.getElementById("showTransit").addEventListener("change", () => recalculateAll());
 
   // Initialize empty state
   buildVargaButtons();
