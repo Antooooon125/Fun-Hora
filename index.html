@@ -432,13 +432,13 @@
   </div>
   <div class="toolbar">
     <select id="ayanamshaSelect">
-      <option value="lahiri" selected>Ayanamsha: XALEN Lahiri</option>
-      <option value="suriyayatra">Method: Suriyayatra workbook (สุริยยาตร์)</option>
+      <option value="suriyayatra" selected>Ayanamsha: Suriyayatra (สุริยยาตร์)</option>
+      <option value="lahiri">Ayanamsha: XALEN Lahiri</option>
       <option value="kp">Ayanamsha: Krishnamurti (KP)</option>
       <option value="raman">Ayanamsha: B.V. Raman</option>
     </select>
-    <button type="button" id="suriyayartToggle" title="Recalculate from the birth details using the other ayanamsa">
-      Switch to Suriyayatra workbook
+    <button type="button" id="suriyayartToggle" title="Recalculate from the birth details using the other method">
+      Switch to XALEN Lahiri
     </button>
     <select id="nodeModeSelect">
       <option value="true" selected>Nodes: True Rahu / Vedic Ketu</option>
@@ -824,7 +824,7 @@
     const mode = ayanamsaSelect.value;
     const workbookMode = mode === "suriyayatra";
     suriyayartToggle.hidden = mode !== "lahiri" && !workbookMode;
-    suriyayartToggle.textContent = workbookMode ? "Switch to XALEN Lahiri" : "Switch to Suriyayatra workbook";
+    suriyayartToggle.textContent = workbookMode ? "Switch to XALEN Lahiri" : "Switch to Suriyayatra";
     document.getElementById("nodeModeSelect").disabled = workbookMode;
     document.getElementById("d2ModeSelect").disabled = workbookMode;
   }

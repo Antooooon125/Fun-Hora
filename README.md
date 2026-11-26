@@ -31,7 +31,7 @@ Fun-Hora is the Jyotish chart app. XALEN Ephemeris is the reusable calculation l
 
 ### Suriyayatra workbook method
 
-Choose **Suriyayatra workbook (สุริยยาตร์)** or use the switch beside the calculation-method menu to compare with XALEN Lahiri. The workbook mode uses its standard natal settings for the ascendant, the seven classical planets, Rahu, Ketu, Uranus, and all 20 displayed divisional charts. Chart longitudes are calculated directly in the sidereal zodiac. The workbook’s D2 and node conventions are used automatically.
+**Suriyayatra (สุริยยาตร์)** is the default for new charts. Use the switch beside the calculation menu to compare with XALEN Lahiri. The workbook mode uses its standard natal settings for the ascendant, the seven classical planets, Rahu, Ketu, Uranus, and all 20 displayed divisional charts. Chart longitudes are calculated directly in the sidereal zodiac. The workbook’s D2 and node conventions are used automatically.
 
 HL and GL use Fun-Hora’s special-Lagna rules with the workbook’s sunrise and solar longitude. The reference workbook has no dedicated HL or GL outputs to compare against. Jaimini, Vimshottari, and other interpretation panels apply Fun-Hora’s existing rules to the selected chart.
 
