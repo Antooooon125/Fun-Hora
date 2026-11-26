@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>How Fun-Hora uses XALEN | Fun-Hora</title>
+  <style>
+    body { background: #121518; color: #dde5ec; font: 1rem/1.65 system-ui, sans-serif; margin: 0; }
+    main { max-width: 70ch; margin: 0 auto; padding: 2rem clamp(1rem, 5vw, 3rem); }
+    h1, h2 { color: #f0f4f8; line-height: 1.25; }
+    h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); }
+    h2 { margin-top: 2rem; }
+    li + li { margin-top: 0.5rem; }
+    a { color: #a7d5ff; text-underline-offset: 0.15em; }
+  </style>
+</head>
+<body>
+  <main>
+    <nav aria-label="Fun-Hora"><a href="./#fun-hora-use">← Back to Fun-Hora</a></nav>
+    <h1>How Fun-Hora uses XALEN</h1>
+    <p>Fun-Hora is the Jyotish chart app. XALEN Ephemeris is the reusable calculation library behind it. In Lahiri mode, Fun-Hora runs XALEN in your browser to calculate planetary positions and speeds, the ascendant, and ayanamsa. Suriyayatra is selected by default and uses spreadsheet formulas for its natal positions and divisional charts.</p>
+    <ul>
+      <li><strong>Vargas</strong> Fun-Hora divides zodiac signs into smaller sections and uses the exact positions to place planets in divisional charts such as D9 and D60.</li>
+      <li><strong>Jaimini</strong> Fun-Hora assigns roles such as Atmakaraka using the selected seven- or eight-karaka convention.</li>
+      <li><strong>Vimshottari</strong> The Moon’s birth nakshatra determines the first dasha ruler. The Moon’s progress through that nakshatra determines how much of the first period remains.</li>
+      <li><strong>Thai chart rules</strong> Fun-Hora draws the round and square Thai charts and displays Taksa roles and วิษะ markers.</li>
+    </ul>
+    <h2 id="how-special-lagnas-work">How Fun-Hora calculates Hora Lagna and Ghati Lagna</h2>
+    <p>The Suriyayatra workbook method calculates sunrise and the Sun’s sidereal longitude using the workbook model. XALEN methods use XALEN’s sunrise and solar calculations. A birth before dawn uses the previous sunrise.</p>
+    <ul>
+      <li><strong>Hora Lagna (HL)</strong> adds 30° for each hour elapsed since sunrise.</li>
+      <li><strong>Ghati Lagna (GL)</strong> adds 30° for each 24 minutes elapsed since sunrise.</li>
+    </ul>
+    <p>Both calculations wrap around the 360° zodiac. The chart shows the reference sunrise in UTC. The workbook method rounds sunrise to a civil minute. XALEN uses apparent sunrise at sea level. <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/1-5">Hora Lagna verses</a> · <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/6-10">Ghati Lagna verses</a></p>
+  </main>
+</body>
+</html>

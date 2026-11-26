@@ -35,11 +35,6 @@
     .birthplace-controls input { flex: 1 1 100%; min-width: 0; }
     .birthplace-controls button, .map-actions button { min-height: 36px; }
     #birthplaceHint { font-size: 0.83rem; color: var(--text-secondary); }
-    #how-fun-hora-works { max-width: 76ch; }
-    #how-fun-hora-works h2, #how-fun-hora-works h3 { color: var(--text-primary); margin-top: 12px; }
-    #how-fun-hora-works p, #how-fun-hora-works ul { margin-block: 8px; }
-    #how-fun-hora-works ul { padding-inline-start: 24px; }
-    #how-fun-hora-works a { color: var(--accent-blue); }
     #birthplaceDialog::backdrop { background: rgb(0 0 0 / 65%); }
     #birthplaceMap { height: min(50vh, 440px); background: var(--bg-tertiary); }
     #birthplaceDialog .map-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -413,6 +408,10 @@
       .card { border: 1px solid #999; background: #fff; break-inside: avoid; }
       #tab-grid { display: block !important; }
     }
+    .wheel-special-lagnas { display: none; }
+    #workspaceContainer.show-wheel-special-lagnas .wheel-special-lagnas { display: inline; }
+    .wheel-lagna-option { display: flex; align-items: center; gap: 0.6em; min-height: 44px; width: fit-content; }
+    .wheel-lagna-option input { width: 1.125rem; height: 1.125rem; margin: 0; accent-color: var(--accent-blue); }
   </style>
 </head>
 <body>
@@ -421,9 +420,9 @@
   <div>
     <h1>Fun-Hora <span style="font-size:0.75rem; color:var(--accent-gold);">v4.3</span></h1>
     <p>Jyotish charts · 20 vargas · Jaimini · Vimshottari</p>
-    <p>Developed in part by <strong>Amnuayvit Thitibordin</strong>.</p>
-    <p><strong>Work in progress.</strong> Calculations and displays may contain errors. <a href="#fun-hora-use" style="color:var(--accent-blue)">Free for noncommercial use</a>.</p>
-    <p><a href="#how-fun-hora-works" style="color:var(--accent-blue)">How Fun-Hora uses XALEN</a></p>
+    <p>Developed in part by <strong>Amnuayvit Thitibordin</strong>. Free for personal and commercial use. Resale is prohibited.</p>
+    <p><strong>Work in progress.</strong> Calculations and displays may contain errors.</p>
+    <p><a href="#fun-hora-use" style="color:var(--accent-blue)">About and credit</a></p>
     <p id="chartSubtitle">No birth data loaded — Enter Date, Time &amp; Location below to calculate</p>
     <details id="chartSettings" hidden>
       <summary>Chart settings</summary>
@@ -486,7 +485,7 @@
     </div>
     <div class="field-group">
       <label for="inTime">Time of Birth (24-hour local time)</label>
-      <input id="inTime" type="text" placeholder="18:30" autocomplete="off" required />
+      <input id="inTime" type="text" inputmode="numeric" placeholder="18:30" autocomplete="off" required />
     </div>
     <div class="field-group">
       <label for="inZone">Birth time zone (IANA)</label>
@@ -558,7 +557,8 @@
 <div id="workspaceContainer" style="display:none;">
   <section id="specialLagnas" class="card" aria-labelledby="specialLagnasTitle" hidden>
     <h2 id="specialLagnasTitle">Special Lagnas</h2>
-    <p><a href="#how-special-lagnas-work" style="color:var(--accent-blue)">How HL and GL are calculated</a></p>
+    <label class="wheel-lagna-option"><input id="showWheelSpecialLagnas" type="checkbox" disabled> Show HL and GL on round D1 wheels</label>
+    <p><a href="./calculation-methods.html#how-special-lagnas-work" style="color:var(--accent-blue)">How HL and GL are calculated</a></p>
     <p id="specialLagnasPositions"></p>
     <p id="specialLagnasSunrise"></p>
   </section>
@@ -805,7 +805,7 @@
 </div>
 
 <script type="module">
-  import { APP_VERSION, ENGINE_VERSION, longitudeParts, resolveBirthTime, validateChart, parseBirthDate, displayBirthDate, parseBirthTime } from "./chart-data.mjs";
+  import { APP_VERSION, ENGINE_VERSION, longitudeParts, resolveBirthTime, validateChart, parseBirthDate, displayBirthDate, formatBirthTimeInput, parseBirthTime } from "./chart-data.mjs";
 
   import { suriyayatraDivision } from "./suriyayatra.mjs";
 
@@ -834,13 +834,20 @@
       [key, document.getElementById(id).value]));
   }
 
+  function hasSpecialLagnaPositions(lagnas) {
+    return Boolean(lagnas && [lagnas.hora, lagnas.ghati].every(value => Number.isFinite(value) && value >= 0 && value < 360));
+  }
+
   function renderSpecialLagnas() {
     const section = document.getElementById("specialLagnas");
     const lagnas = state?.specialLagnas;
     section.hidden = lagnas === undefined;
     const positions = document.getElementById("specialLagnasPositions");
     const sunrise = document.getElementById("specialLagnasSunrise");
-    if (!lagnas || ![lagnas.hora, lagnas.ghati].every(value => Number.isFinite(value) && value >= 0 && value < 360)) {
+    const available = hasSpecialLagnaPositions(lagnas);
+    document.getElementById("showWheelSpecialLagnas").disabled =
+      !available || document.getElementById("chartStyleSelect").value !== "thai_round";
+    if (!available) {
       positions.textContent = "HL and GL unavailable for this chart.";
       sunrise.textContent = "";
       return;
@@ -1446,10 +1453,10 @@
     return "Great Enemy";
   }
 
-  function renderChartBox(containerId, title, subtitle, lagnaSign, placements) {
+  function renderChartBox(containerId, title, subtitle, lagnaSign, placements, specialLagnas) {
     const style = document.getElementById("chartStyleSelect").value;
     if (style === "thai_round") {
-      renderThaiRoundWheel(containerId, title, subtitle, lagnaSign, placements);
+      renderThaiRoundWheel(containerId, title, subtitle, lagnaSign, placements, specialLagnas);
       return;
     }
 
@@ -1490,7 +1497,7 @@
     document.getElementById(containerId).innerHTML = html;
   }
 
-  function renderThaiRoundWheel(containerId, title, subtitle, lagnaSign, placements) {
+  function renderThaiRoundWheel(containerId, title, subtitle, lagnaSign, placements, specialLagnas) {
     const cx = 250, cy = 250;
     const rOuter = 236;
     const rHeader = 194;
@@ -1581,6 +1588,25 @@
       }
     }
 
+    let specialLagnaSvg = "";
+    if (hasSpecialLagnaPositions(specialLagnas)) {
+      const horaSign = longitudeParts(specialLagnas.hora).sign;
+      const ghatiSign = longitudeParts(specialLagnas.ghati).sign;
+      const sameSign = horaSign === ghatiSign;
+      const markers = [
+        ["HL", "Hora Lagna", horaSign, sameSign ? -10 : 0],
+        ["GL", "Ghati Lagna", ghatiSign, sameSign ? 10 : 0]
+      ];
+      specialLagnaSvg = `<g class="wheel-special-lagnas">${markers.map(([label, name, sign, offset]) => {
+        const {x, y} = polarToXY(100, -90 - sign * 30 + offset);
+        return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})">
+          <title>${name} · ${SIGNS[sign].en}</title>
+          <rect x="-13" y="-9" width="26" height="18" rx="4" fill="#172b3d" stroke="#80b9e9" />
+          <text fill="#d7ecff" font-size="15" font-weight="700" text-anchor="middle" y="5">${label}</text>
+        </g>`;
+      }).join("")}</g>`;
+    }
+
     const centerSvg = `
       <circle cx="${cx}" cy="${cy}" r="${rInner}" fill="#121518" stroke="#7fa68a" stroke-width="2" />
       <circle cx="${cx}" cy="${cy}" r="${rInner - 5}" fill="none" stroke="#323b44" stroke-width="1" stroke-dasharray="3,2" />
@@ -1596,6 +1622,7 @@
           <circle cx="${cx}" cy="${cy}" r="${rOuter + 4}" fill="none" stroke="#7fa68a" stroke-width="2" />
           ${wedgesSvg}
           ${centerSvg}
+          ${specialLagnaSvg}
         </svg>
       </div>
     `;
@@ -1677,7 +1704,7 @@
     const placements = computed.map(c => ({
       key: c.key, thNum: c.thNum, motion: c.motion, sign: c.vargaSigns[activeVarga]
     }));
-    renderChartBox("singleChartHost", vObj.name.split(" ")[0], `30° ÷ ${activeVarga.replace('D','')}`, lagnaVargaSign, placements);
+    renderChartBox("singleChartHost", vObj.name.split(" ")[0], `30° ÷ ${activeVarga.replace('D','')}`, lagnaVargaSign, placements, activeVarga === "D1" ? state.specialLagnas : undefined);
 
     document.getElementById("vargaTableBody").innerHTML = computed.map(c => {
       const sIdx = c.vargaSigns[activeVarga];
@@ -1708,7 +1735,7 @@
       const meta = VARGAS.find(v => v.id === vId);
       const lSign = computed[0].vargaSigns[vId];
       const pl = computed.map(c => ({ key: c.key, thNum: c.thNum, motion: c.motion, sign: c.vargaSigns[vId] }));
-      renderChartBox(`grid${vId}Host`, meta.name.split(" ")[0], meta.desc.split("—")[1].trim(), lSign, pl);
+      renderChartBox(`grid${vId}Host`, meta.name.split(" ")[0], meta.desc.split("—")[1].trim(), lSign, pl, vId === "D1" ? state.specialLagnas : undefined);
     });
 
     runJaiminiAnalysis(computed);
@@ -2351,6 +2378,17 @@
     if (birthDateCalendar.value) birthDateInput.value = displayBirthDate(birthDateCalendar.value);
   });
 
+  document.getElementById("inTime").addEventListener("input", event => {
+    const input = event.currentTarget;
+    if (event.inputType?.startsWith("delete") || event.isComposing || input.selectionEnd !== input.value.length) return;
+    const formatted = formatBirthTimeInput(input.value);
+    if (formatted !== input.value) input.value = formatted;
+  });
+
+  document.getElementById("showWheelSpecialLagnas").addEventListener("change", event => {
+    document.getElementById("workspaceContainer").classList.toggle("show-wheel-special-lagnas", event.currentTarget.checked);
+  });
+
   // Initialize empty state
   buildVargaButtons();
   loadThaiPlaces();
@@ -2375,25 +2413,6 @@
   updateSuriyayartToggle();
 </script>
 <footer style="padding: 16px; color: var(--text-secondary);">
-  <section id="how-fun-hora-works" aria-labelledby="how-fun-hora-title">
-    <h2 id="how-fun-hora-title">How Fun-Hora uses XALEN</h2>
-    <p>Fun-Hora is the Jyotish chart app. XALEN Ephemeris is the reusable calculation library behind it. Fun-Hora runs XALEN in your browser to calculate planetary positions and speeds, the ascendant, and ayanamsa. Fun-Hora then applies its chart rules to those values.</p>
-    <ul>
-      <li><strong>Vargas</strong> Fun-Hora divides zodiac signs into smaller sections and uses the exact positions to place planets in divisional charts such as D9 and D60.</li>
-      <li><strong>Jaimini</strong> Fun-Hora assigns roles such as Atmakaraka using the selected seven- or eight-karaka convention.</li>
-      <li><strong>Vimshottari</strong> The Moon’s birth nakshatra determines the first dasha ruler. The Moon’s progress through that nakshatra determines how much of the first period remains.</li>
-      <li><strong>Thai chart rules</strong> Fun-Hora draws the round and square Thai charts and displays Taksa roles and วิษะ markers.</li>
-    </ul>
-    <h3 id="how-special-lagnas-work">How Fun-Hora calculates Hora Lagna and Ghati Lagna</h3>
-    <p>The Suriyayatra workbook method calculates sunrise and the Sun’s sidereal longitude using the workbook model. XALEN methods use XALEN’s sunrise and solar calculations. A birth before dawn uses the previous sunrise.</p>
-    <ul>
-      <li><strong>Hora Lagna (HL)</strong> adds 30° for each hour elapsed since sunrise.</li>
-      <li><strong>Ghati Lagna (GL)</strong> adds 30° for each 24 minutes elapsed since sunrise.</li>
-    </ul>
-    <p>Both calculations wrap around the 360° zodiac. The chart shows the reference sunrise in UTC. The workbook method rounds sunrise to a civil minute. XALEN uses apparent sunrise at sea level. <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/1-5">Hora Lagna verses</a> · <a href="https://www.siva.sh/brihat-parashara-hora-shastra/5/6-10">Ghati Lagna verses</a></p>
-    <h3>Suriyayatra workbook method</h3>
-    <p>This method follows the workbook’s standard natal configuration for longitudes, Lagna, nodes, and all 20 displayed divisional charts. Its longitudes are computed directly in the sidereal zodiac. Use the switch to compare with XALEN Lahiri.</p>
-  </section>
   <details>
     <summary>About Fun-Hora and what’s new</summary>
     <p>Fun-Hora is a Jyotish chart workbench with Thai round and square charts, 20 vargas, Jaimini, and Vimshottari.</p>
@@ -2402,9 +2421,10 @@
     <p>Chart calculations run in your browser. The map picker loads map tiles from OpenStreetMap. The optional Find button sends the location search to <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> via <a href="https://operations.osmfoundation.org/policies/nominatim/">Nominatim</a>.</p>
   </details>
   <section id="fun-hora-use" aria-labelledby="fun-hora-use-title" style="margin-block:16px;max-width:76ch">
-    <h2 id="fun-hora-use-title" style="color:var(--text-primary)">Credit and use</h2>
-    <p>Fun-Hora was developed in part by Amnuayvit Thitibordin. The hosted app is free to use for noncommercial purposes only.</p>
-    <p>You may share and adapt Fun-Hora’s original materials for noncommercial purposes. Credit Fun-Hora and keep these same terms when sharing adaptations. XALEN and third-party materials are covered by their respective licenses.</p>
+    <h2 id="fun-hora-use-title" style="color:var(--text-primary)">About and credit</h2>
+    <p>Developed in part by <strong>Amnuayvit Thitibordin</strong>. Free for personal and commercial use. Selling Fun-Hora or copies of it is prohibited.</p>
+    <p>You may share and adapt Fun-Hora’s original materials. Credit Fun-Hora and share adaptations under the same terms. XALEN and other third-party materials are governed by their respective licenses.</p>
+    <p><a href="./calculation-methods.html" style="color:var(--accent-blue)">How Fun-Hora uses XALEN</a></p>
     <p>Fun-Hora is still in development. Calculations and displays may contain errors. <a href="https://github.com/Antooooon125/Fun-Hora/issues" style="color:var(--accent-blue)">Report an issue</a>.</p>
   </section>
   <p>Astronomical calculations by <a href="https://github.com/vedika-io/xalen-ephemeris">XALEN Ephemeris</a> · <a href="./NOTICE">Notices</a> · <a href="./LICENSE">Apache 2.0</a></p>

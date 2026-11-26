@@ -8,7 +8,7 @@ Fun-Hora is a browser-based Jyotish chart workbench with Thai round and square c
 
 ## Use and sharing
 
-The hosted Fun-Hora app is free to use for noncommercial purposes only. You may share and adapt Fun-Hora’s original materials for noncommercial purposes. Credit Fun-Hora and keep these same terms when sharing adaptations. XALEN and third-party materials are covered by their respective licenses. [XALEN license](LICENSE) · [Notices](NOTICE)
+The hosted Fun-Hora app is free for personal and commercial use. Selling Fun-Hora or copies of it is prohibited. You may share and adapt Fun-Hora’s original materials with credit and under the same terms. XALEN and other third-party materials are governed by their respective licenses. [XALEN license](LICENSE) · [Notices](NOTICE) · [Calculation methods](calculation-methods.html)
 
 ## What's new in v4.2
 

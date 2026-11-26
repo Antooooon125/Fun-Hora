@@ -43,8 +43,12 @@ export function displayBirthDate(iso) {
   return iso.split('-').reverse().join('/');
 }
 
+export function formatBirthTimeInput(input) {
+  return input.replace(/^(\d{2})::(\d{0,2})$/, '$1:$2').replace(/^([01]\d|2[0-3])(\d{0,2})$/, '$1:$2');
+}
+
 export function parseBirthTime(input) {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(input.trim());
+  const match = /^(\d{1,2}):(\d{2})$/.exec(formatBirthTimeInput(input.trim()));
   if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) {
     throw new Error('Enter a 24-hour birth time from 00:00 to 23:59.');
   }
