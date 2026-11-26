@@ -709,7 +709,7 @@
             <span>Vimshottari Dasha (120-Year Nakshatra Cycle)</span>
             <span id="vimBalanceBadge" class="badge b-varg">Moon Nakshatra</span>
           </h2>
-          <div class="info-note" id="vimSummaryNote">Click any Vimshottari Mahadasha row to inspect its 9 Bhukti (Antardasha) sub-periods.</div>
+          <div class="info-note" id="vimSummaryNote">Choose a Mahadasha row to see its Bhuktis, then choose a Bhukti to see its Pratyantardashas.</div>
           <table>
             <thead>
               <tr>
@@ -735,6 +735,13 @@
               </tr>
             </thead>
             <tbody id="vimBhuktiBody"></tbody>
+          </table>
+          <h3 id="vimPratyantarTitle" style="font-size:0.9rem; color:var(--accent-sage); margin:14px 0 8px 0;">Pratyantardasha</h3>
+          <label for="vimPratyantarBhukti">Bhukti (Antardasha)</label>
+          <select id="vimPratyantarBhukti"></select>
+          <table aria-labelledby="vimPratyantarTitle">
+            <thead><tr><th>Pratyantardasha lord</th><th>Days shown</th><th>Start (UTC)</th><th>End (UTC)</th></tr></thead>
+            <tbody id="vimPratyantarBody"></tbody>
           </table>
         </div>
       </div>
@@ -2058,10 +2065,11 @@
         const bYears = (fullYears * bLordObj.years) / 120.0;
         const bEndMs = bCursorMs + bYears * MS_PER_YEAR;
 
-        if (bEndMs > birthDateObj.getTime() + 86400000) {
+        if (bEndMs > birthDateObj.getTime() + 1) {
           bhuktis.push({
             lord: bLordObj,
             years: bYears,
+            fullStartMs: bCursorMs,
             startMs: Math.max(bCursorMs, birthDateObj.getTime()),
             endMs: bEndMs
           });
@@ -2083,6 +2091,7 @@
     }
 
     if (selectedVimMahaIdx === null) {
+      document.getElementById("vimPratyantarBhukti").value = "";
       const activeIdx = cachedVimPeriods.findIndex(p => nowMs >= p.startMs && nowMs < p.endMs);
       selectedVimMahaIdx = activeIdx >= 0 ? activeIdx : 0;
     }
@@ -2111,6 +2120,7 @@
 
   window.selectVimMaha = function(idx) {
     selectedVimMahaIdx = idx;
+    document.getElementById("vimPratyantarBhukti").value = "";
     recalculateAll();
   };
 
@@ -2139,6 +2149,50 @@
         </tr>
       `;
     }).join("");
+
+    const select = document.getElementById("vimPratyantarBhukti");
+    const previous = select.value;
+    const active = maha.bhuktis.find(b => nowMs >= b.startMs && nowMs < b.endMs);
+    select.innerHTML = maha.bhuktis.map(b => `<option value="${b.lord.key}">${maha.lord.key} / ${b.lord.label}</option>`).join("");
+    select.value = maha.bhuktis.find(b => b.lord.key === previous)?.lord.key
+      ?? active?.lord.key ?? maha.bhuktis[0]?.lord.key ?? "";
+    renderVimPratyantardashas();
+  }
+
+  function renderVimPratyantardashas() {
+    const lordKey = document.getElementById("vimPratyantarBhukti").value;
+    const bhukti = cachedVimPeriods[selectedVimMahaIdx]?.bhuktis.find(b => b.lord.key === lordKey);
+    const table = document.getElementById("vimPratyantarBody");
+    if (!bhukti) {
+      table.innerHTML = "";
+      return;
+    }
+
+    const orderStart = VIM_ORDER.findIndex(lord => lord.key === lordKey);
+    const span = bhukti.endMs - bhukti.fullStartMs;
+    const now = Date.now();
+    const dayMs = 86400000;
+    const format = ms => {
+      const iso = new Date(ms).toISOString();
+      return `${displayBirthDate(iso.slice(0, 10))} ${iso.slice(11, 16)}`;
+    };
+    let weight = 0;
+    const rows = [];
+    for (let step = 0; step < VIM_ORDER.length; step++) {
+      const lord = VIM_ORDER[(orderStart + step) % VIM_ORDER.length];
+      const start = Math.max(bhukti.startMs, bhukti.fullStartMs + span * weight / 120);
+      weight += lord.years;
+      const end = weight === 120 ? bhukti.endMs : bhukti.fullStartMs + span * weight / 120;
+      if (end <= start + 1) continue;
+      const current = now >= start && now < end;
+      rows.push(`<tr>
+        <td><strong>${lord.label}</strong> ${current ? '<span class="badge b-exalt">Current</span>' : ''}</td>
+        <td class="mono">${((end - start) / dayMs).toFixed(2)}</td>
+        <td class="mono">${format(start)}</td>
+        <td class="mono">${format(end)}</td>
+      </tr>`);
+    }
+    table.innerHTML = rows.join("");
   }
 
   // =========================================================================
@@ -2440,6 +2494,8 @@
   showWheelDrishti.addEventListener("change", () => {
     document.getElementById("workspaceContainer").classList.toggle("show-wheel-drishti", showWheelDrishti.checked);
   });
+
+  document.getElementById("vimPratyantarBhukti").addEventListener("change", renderVimPratyantardashas);
 
   // Initialize empty state
   buildVargaButtons();
