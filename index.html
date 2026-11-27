@@ -408,6 +408,11 @@
       .card { border: 1px solid #999; background: #fff; break-inside: avoid; }
       #tab-grid { display: block !important; }
     }
+    #d1PositionTip { position: fixed; z-index: 20; pointer-events: none; padding: 5px 9px;
+      background: #202830; color: #f0f4f8; border: 1px solid #526371; border-radius: 6px;
+      font-size: 0.8rem; max-width: calc(100vw - 8px); box-shadow: 0 3px 9px #0006; }
+    [data-d1-position] { cursor: help; }
+    [data-d1-position]:focus-visible { outline: 1px solid #9cf0e2; }
     .transit-fields { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; }
     .transit-fields label { display: grid; gap: 0.25rem; }
     .transit-fields input { width: 9rem; max-width: 100%; }
@@ -552,7 +557,7 @@
 <dialog id="birthplaceDialog" aria-labelledby="birthplaceDialogTitle">
   <h2 id="birthplaceDialogTitle">Pin your birthplace</h2>
   <p>Click or tap the map, or pan with the keyboard and select the map center.</p>
-  <div id="birthplaceMap" aria-label="OpenStreetMap birthplace picker"></div>
+  <div id="birthplaceMap" aria-label="OpenStreetMap location picker"></div>
   <p id="birthplaceMapStatus" role="status"></p>
   <div class="map-actions">
     <button type="button" id="pinMapCenter" disabled>Pin map center</button>
@@ -569,6 +574,7 @@
 
 <!-- MAIN ANALYTICAL WORKSPACE -->
 <div id="workspaceContainer" style="display:none;">
+  <div id="d1PositionTip" aria-hidden="true" hidden></div>
   <section id="specialLagnas" class="card" aria-labelledby="specialLagnasTitle" hidden>
     <h2 id="specialLagnasTitle">Special Lagnas</h2>
     <label class="wheel-lagna-option"><input id="showWheelSpecialLagnas" type="checkbox" disabled> Show HL and GL on round D1 wheels</label>
@@ -579,10 +585,12 @@
   <details class="card" id="d1TransitPanel">
     <summary>D1 transits</summary>
     <p id="transitZone"></p>
+    <button id="openTransitMap" type="button">Pin transit location</button>
+    <p id="transitLocation"></p>
     <form id="transitForm">
       <div class="transit-fields">
         <label>Transit date (DD/MM/YYYY)<input id="transitDate" placeholder="DD/MM/YYYY" inputmode="numeric" required></label>
-        <label>Local time (24-hour)<input id="transitTime" placeholder="18:30" inputmode="numeric" required></label>
+        <label>Bangkok time (24-hour)<input id="transitTime" placeholder="18:30" inputmode="numeric" required></label>
         <button type="submit">Calculate transits</button>
         <button id="transitUseNow" type="button">Use now</button>
       </div>
@@ -1019,6 +1027,8 @@
 
   let state = null;
   let transitTime = null;
+  let transitPin = null;
+  const transitTimeZone = "Asia/Bangkok";
   let activeVarga = "D1";
   let selectedMahaIdx = null;
   let selectedVimMahaIdx = null;
@@ -1140,6 +1150,7 @@
     birthplaceHint.textContent = "";
     state = null;
     transitTime = null;
+    transitPin = null;
     document.getElementById("showTransit").checked = false;
     document.getElementById("inZone").value = "";
     document.getElementById("birthOccurrenceField").hidden = true;
@@ -1502,11 +1513,14 @@
   }
 
   function getD1Transits() {
-    const zone = state.settings?.timeZone || "";
+    const {lat, lon} = transitPin ?? state;
+    document.getElementById("transitLocation").textContent = transitPin
+      ? `Transit pin · ${lat.toFixed(4)}, ${lon.toFixed(4)}` : "Transit location defaults to the birthplace.";
+    const zone = transitTimeZone;
     const mode = state.settings?.ayanMode;
     const supported = ["suriyayatra", "lahiri", "kp", "raman"].includes(mode);
     document.getElementById("transitZone").textContent = supported
-      ? "Birthplace time zone: " + (zone || ("UTC" + (state.tz >= 0 ? "+" : "") + state.tz))
+      ? "Transit time zone: Bangkok (Asia/Bangkok)"
       : "Recalculate this natal chart to use transits.";
     const checkbox = document.getElementById("showTransit");
     const status = document.getElementById("transitStatus");
@@ -1528,13 +1542,13 @@
       const {siderealMap} = calculateEphemeris({
         year: instant.getUTCFullYear(), month: instant.getUTCMonth() + 1, day: instant.getUTCDate(),
         utcHours: instant.getUTCHours() + instant.getUTCMinutes() / 60 + instant.getUTCSeconds() / 3600,
-        lat: state.lat, lon: state.lon, utcOffset: offset, ayanMode: mode, nodeMode: state.settings.nodeMode
+        lat, lon, utcOffset: offset, ayanMode: mode, nodeMode: state.settings.nodeMode
       });
-      const transit = state.bodies.filter(body => body.key !== "Lagna" && Number.isFinite(siderealMap[body.key]))
-        .map(body => ({key: body.key, thNum: body.thNum, ...longitudeParts(siderealMap[body.key])}));
+      const transit = state.bodies.filter(body => Number.isFinite(siderealMap[body.key]))
+        .map(body => ({key: body.key, thNum: escapeHtml(body.thNum), ...longitudeParts(siderealMap[body.key])}));
       const lagnaSign = state.bodies[0].sign;
       document.getElementById("transitPositionsBody").innerHTML = transit.map(({key, sign, deg, min}) =>
-        `<tr><td>${key}</td><td>${SIGNS[sign].en} ${deg}°${String(min).padStart(2, "0")}′</td><td>${mod12(sign - lagnaSign) + 1}</td></tr>`
+        `<tr><td>${key === "Lagna" ? "Transit Lagna" : key}</td><td>${SIGNS[sign].en} ${deg}°${String(min).padStart(2, "0")}′</td><td>${mod12(sign - lagnaSign) + 1}</td></tr>`
       ).join("");
       status.textContent = `Transit: ${displayBirthDate(date)} ${time} · ${utc.slice(0, 16).replace("T", " ")} UTC`
         + (choices.length > 1 ? (utc === choices[0].utc ? " · First occurrence" : " · Second occurrence") : "");
@@ -1545,6 +1559,12 @@
       status.textContent = error.message;
       return [];
     }
+  }
+
+  function positionAttributes(body, kind) {
+    if (!Number.isInteger(body.deg) || !Number.isInteger(body.min)) return "";
+    const description = `${kind} ${body.key} · ${SIGNS[body.sign].en} ${body.deg}°${String(body.min).padStart(2, "0")}′`;
+    return `data-d1-position="${escapeHtml(description)}" aria-label="${escapeHtml(description)}" tabindex="0"`;
   }
 
   function renderChartBox(containerId, title, subtitle, lagnaSign, placements, specialLagnas, transit = []) {
@@ -1574,10 +1594,10 @@
         const houseIdx = mod12(sIdx - lagnaSign);
         const isLagna = sIdx === lagnaSign;
         const here = placements.filter(p => p.sign === sIdx);
-        const tags = here.map(p => `<span class="planet-tag" style="${p.key === 'Lagna' || p.key === 'D9L' ? 'border-color:var(--accent-sage); color:var(--accent-sage);' : ''}">${p.thNum}${p.motion ? '(' + p.motion + ')' : ''}</span>`).join("");
+        const tags = here.map(p => `<span class="planet-tag" ${title === "D1" ? positionAttributes(p, "Natal") : ""} style="${p.key === 'Lagna' || p.key === 'D9L' ? 'border-color:var(--accent-sage); color:var(--accent-sage);' : ''}">${p.thNum}${p.motion ? '(' + p.motion + ')' : ''}</span>`).join("");
 
         const transitHere = transit.filter(p => p.sign === sIdx);
-        const transitRow = transitHere.length ? `<div class="transit-cell">T: ${transitHere.map(p => p.thNum).join(" ")}</div>` : "";
+        const transitRow = transitHere.length ? `<div class="transit-cell">T: ${transitHere.map(p => `<span ${positionAttributes(p, "Transit")}>${p.thNum}</span>`).join(" ")}</div>` : "";
         html += `
           <div class="rashi-cell ${isLagna ? 'lagna-cell' : ''}">
             <div class="rashi-header">
@@ -1629,7 +1649,7 @@
         const end = polarToXY(rTransit, endDeg);
         const bodies = transit.filter(p => p.sign === sIdx);
         const label = polarToXY((rTransit + rOuter) / 2, centerDeg);
-        const tokens = bodies.map(p => p.thNum);
+        const tokens = bodies.map(p => `<tspan ${positionAttributes(p, "Transit")}>${p.thNum}</tspan>`);
         const rows = [tokens.slice(0, 5), tokens.slice(5)].filter(row => row.length);
         const labels = rows.map((row, index) => `<tspan x="${label.x}" y="${label.y + (index - (rows.length - 1) / 2) * 16}">${row.join(" ")}</tspan>`).join("");
         transitWedges += `<g class="transit-sector">
@@ -1637,8 +1657,7 @@
             A ${rTransit} ${rTransit} 0 0 1 ${end.x} ${end.y} L ${p2Out.x} ${p2Out.y}
             A ${rOuter} ${rOuter} 0 0 0 ${p1Out.x} ${p1Out.y} Z"
             fill="#182d2b" stroke="#426a63" />
-          ${bodies.length ? `<title>Transit · ${bodies.map(p => p.key).join(", ")}</title>
-            <text x="${label.x}" y="${label.y}" fill="#9cf0e2" font-size="16" font-weight="700"
+          ${bodies.length ? `<text x="${label.x}" y="${label.y}" fill="#9cf0e2" font-size="16" font-weight="700"
               text-anchor="middle" dominant-baseline="middle">${labels}</text>` : ""}
         </g>`;
       }
@@ -1685,7 +1704,10 @@
       const here = placements.filter(p => p.sign === sIdx);
       if (here.length > 0) {
         const planetPos = polarToXY((rHeader + rInner) / 2 + 4, centerDeg);
-        const tokens = here.map(p => `${p.thNum}${p.motion ? '(' + p.motion + ')' : ''}`);
+        const tokens = here.map(p => {
+          const label = `${p.thNum}${p.motion ? "(" + p.motion + ")" : ""}`;
+          return title === "D1" ? `<tspan ${positionAttributes(p, "Natal")}>${label}</tspan>` : label;
+        });
         const lines = [];
         for (let i = 0; i < tokens.length; i += 3) {
           lines.push(tokens.slice(i, i + 3).join(" "));
@@ -1828,6 +1850,7 @@
 
   window.recalculateAll = function() {
     if (!state) return;
+    document.getElementById("d1PositionTip").hidden = true;
     state.weekday = parseInt(document.getElementById("weekdaySelect").value, 10);
     if (state.settings) {
       const {chartStyle, d2Mode, karakaMode} = readSettings();
@@ -1860,7 +1883,7 @@
     const transit = getD1Transits();
     const lagnaVargaSign = computed[0].vargaSigns[activeVarga];
     const placements = computed.map(c => ({
-      key: c.key, thNum: c.thNum, motion: c.motion, sign: c.vargaSigns[activeVarga]
+      key: c.key, thNum: c.thNum, motion: c.motion, deg: c.deg, min: c.min, sign: c.vargaSigns[activeVarga]
     }));
     renderChartBox("singleChartHost", vObj.name.split(" ")[0], `30° ÷ ${activeVarga.replace('D','')}`, lagnaVargaSign, placements, activeVarga === "D1" ? state.specialLagnas : undefined, activeVarga === "D1" ? transit : []);
 
@@ -1892,7 +1915,7 @@
     ["D1", "D9", "D10", "D24"].forEach(vId => {
       const meta = VARGAS.find(v => v.id === vId);
       const lSign = computed[0].vargaSigns[vId];
-      const pl = computed.map(c => ({ key: c.key, thNum: c.thNum, motion: c.motion, sign: c.vargaSigns[vId] }));
+      const pl = computed.map(c => ({ key: c.key, thNum: c.thNum, motion: c.motion, deg: c.deg, min: c.min, sign: c.vargaSigns[vId] }));
       renderChartBox(`grid${vId}Host`, meta.name.split(" ")[0], meta.desc.split("—")[1].trim(), lSign, pl, vId === "D1" ? state.specialLagnas : undefined, vId === "D1" ? transit : []);
     });
 
@@ -2425,6 +2448,7 @@
     locationRequest++;
     birthplaceHint.textContent = "";
     transitTime = null;
+    transitPin = null;
     document.getElementById("showTransit").checked = false;
     state = chart;
     selectedMahaIdx = null;
@@ -2464,6 +2488,8 @@
   const mapCenterButton = document.getElementById("pinMapCenter");
   const mapApplyButton = document.getElementById("useBirthplacePin");
   let map, pin, selection, leafletLoad;
+  const transitMapButton = document.getElementById("openTransitMap");
+  let mapTrigger = mapOpenButton;
 
   function loadLeaflet() {
     if (!leafletLoad) {
@@ -2501,8 +2527,11 @@
     mapStatus.textContent = selection.lat.toFixed(6) + ", " + selection.lng.toFixed(6);
   }
 
-  mapDialog.addEventListener("close", () => mapOpenButton.focus());
-  mapOpenButton.addEventListener("click", async () => {
+  mapDialog.addEventListener("close", () => mapTrigger.focus());
+  async function openLocationMap(event) {
+    mapTrigger = event.currentTarget;
+    const forTransit = mapTrigger === transitMapButton;
+    document.getElementById("birthplaceDialogTitle").textContent = forTransit ? "Pin transit location" : "Pin your birthplace";
     mapDialog.showModal();
     mapStatus.textContent = "Loading OpenStreetMap…";
     mapCenterButton.disabled = true;
@@ -2517,29 +2546,41 @@
           maxZoom: 19,
           attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
         }).on("tileerror", () => {
-          mapStatus.textContent = "Some map tiles could not load. You can retry or enter coordinates manually.";
+          mapStatus.textContent = mapTrigger === transitMapButton
+            ? "Some map tiles could not load. Close and reopen the map to retry."
+            : "Some map tiles could not load. You can retry or enter coordinates manually.";
         }).addTo(map);
-        pin = leaflet.marker([0, 0], {draggable: true, title: "Birthplace pin"});
+        pin = leaflet.marker([0, 0], {draggable: true, title: "Location pin"});
         pin.on("dragend", () => selectBirthplace(pin.getLatLng()));
         map.on("click", event => selectBirthplace(event.latlng));
       }
       pin.remove();
-      const lat = Number.parseFloat(document.getElementById("inLat").value);
-      const lon = Number.parseFloat(document.getElementById("inLon").value);
+      const lat = forTransit ? (transitPin ?? state).lat : Number.parseFloat(document.getElementById("inLat").value);
+      const lon = forTransit ? (transitPin ?? state).lon : Number.parseFloat(document.getElementById("inLon").value);
       const hasCoordinates = Number.isFinite(lat) && Math.abs(lat) <= 85 && Number.isFinite(lon) && Math.abs(lon) <= 180;
       map.invalidateSize();
       map.setView(hasCoordinates ? [lat, lon] : [13.7563, 100.5018], hasCoordinates ? 12 : 6);
-      mapStatus.textContent = "Select where you were born.";
+      mapStatus.textContent = forTransit ? "Select the location for the transit Lagna." : "Select where you were born.";
       if (hasCoordinates) selectBirthplace(leaflet.latLng(lat, lon));
       mapCenterButton.disabled = false;
       map.getContainer().focus();
     } catch {
-      mapStatus.textContent = "The map could not load. Close it to enter coordinates manually, or reopen it to retry.";
+      mapStatus.textContent = forTransit
+        ? "The map could not load. Close and reopen it to retry."
+        : "The map could not load. Close it to enter coordinates manually, or reopen it to retry.";
     }
-  });
+  }
+  mapOpenButton.addEventListener("click", openLocationMap);
+  transitMapButton.addEventListener("click", openLocationMap);
   mapCenterButton.addEventListener("click", () => selectBirthplace(map.getCenter()));
   mapApplyButton.addEventListener("click", () => {
     if (!selection) return;
+    if (mapTrigger === transitMapButton) {
+      transitPin = {lat: selection.lat, lon: selection.lng};
+      mapDialog.close();
+      recalculateAll();
+      return;
+    }
     locationRequest++;
     const previousLat = Number.parseFloat(document.getElementById("inLat").value);
     const previousLon = Number.parseFloat(document.getElementById("inLon").value);
@@ -2625,21 +2666,13 @@
   document.getElementById("transitUseNow").addEventListener("click", () => {
     if (!state) return;
     const now = new Date(Math.floor(Date.now() / 60000) * 60000);
-    const zone = state.settings?.timeZone;
-    let date, time;
-    if (zone) {
-      const formatter = new Intl.DateTimeFormat("en-GB", {
-        timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit", hourCycle: "h23"
-      });
-      const parts = Object.fromEntries(formatter.formatToParts(now).map(({type, value}) => [type, value]));
-      date = `${parts.year}-${parts.month}-${parts.day}`;
-      time = `${parts.hour}:${parts.minute}`;
-    } else {
-      const local = new Date(now.getTime() + state.tz * 3600000).toISOString();
-      date = local.slice(0, 10);
-      time = local.slice(11, 16);
-    }
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone: transitTimeZone, year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+    });
+    const parts = Object.fromEntries(formatter.formatToParts(now).map(({type, value}) => [type, value]));
+    const date = `${parts.year}-${parts.month}-${parts.day}`;
+    const time = `${parts.hour}:${parts.minute}`;
     document.getElementById("transitDate").value = displayBirthDate(date);
     document.getElementById("transitTime").value = time;
     applyTransitTime(date, time, now.toISOString());
@@ -2657,6 +2690,30 @@
     }
   });
   document.getElementById("showTransit").addEventListener("change", () => recalculateAll());
+
+  const positionTip = document.getElementById("d1PositionTip");
+  const chartWorkspace = document.getElementById("workspaceContainer");
+  function showPositionTip(event) {
+    const marker = event.target.closest("[data-d1-position]");
+    if (!marker || (event.type === "pointerover" && event.pointerType !== "mouse")) return;
+    const box = marker.getBoundingClientRect();
+    positionTip.textContent = marker.dataset.d1Position;
+    positionTip.hidden = false;
+    positionTip.style.left = Math.max(4, Math.min(box.left, innerWidth - positionTip.offsetWidth - 4)) + "px";
+    const above = box.top - positionTip.offsetHeight - 6;
+    positionTip.style.top = Math.max(4, Math.min(above >= 4 ? above : box.bottom + 6, innerHeight - positionTip.offsetHeight - 4)) + "px";
+  }
+  chartWorkspace.addEventListener("pointerover", showPositionTip);
+  chartWorkspace.addEventListener("focusin", showPositionTip);
+  for (const type of ["pointerout", "focusout"]) {
+    chartWorkspace.addEventListener(type, event => {
+      if (event.target.closest("[data-d1-position]")) positionTip.hidden = true;
+    });
+  }
+  window.addEventListener("scroll", () => { positionTip.hidden = true; }, true);
+  chartWorkspace.addEventListener("keydown", event => {
+    if (event.key === "Escape") positionTip.hidden = true;
+  });
 
   // Initialize empty state
   buildVargaButtons();
