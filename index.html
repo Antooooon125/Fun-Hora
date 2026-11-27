@@ -413,6 +413,18 @@
       font-size: 0.8rem; max-width: calc(100vw - 8px); box-shadow: 0 3px 9px #0006; }
     [data-d1-position] { cursor: help; }
     [data-d1-position]:focus-visible { outline: 1px solid #9cf0e2; }
+    @media screen and (min-width: 1101px) {
+      .d1-controls {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+        margin-bottom: 16px;
+      }
+      .d1-controls > .card { margin-bottom: 0; }
+      .d1-controls > .card:only-child,
+      .d1-controls > .card:first-child:has(+ [hidden]) { grid-column: 1 / -1; }
+    }
     .transit-fields { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; }
     .transit-fields label { display: grid; gap: 0.25rem; }
     .transit-fields input { width: 9rem; max-width: 100%; }
@@ -575,38 +587,40 @@
 <!-- MAIN ANALYTICAL WORKSPACE -->
 <div id="workspaceContainer" style="display:none;">
   <div id="d1PositionTip" aria-hidden="true" hidden></div>
-  <section id="specialLagnas" class="card" aria-labelledby="specialLagnasTitle" hidden>
-    <h2 id="specialLagnasTitle">Special Lagnas</h2>
-    <label class="wheel-lagna-option"><input id="showWheelSpecialLagnas" type="checkbox" disabled> Show HL and GL on round D1 wheels</label>
-    <p><a href="./calculation-methods.html#how-special-lagnas-work" style="color:var(--accent-blue)">How HL and GL are calculated</a></p>
-    <p id="specialLagnasPositions"></p>
-    <p id="specialLagnasSunrise"></p>
-  </section>
-  <details class="card" id="d1TransitPanel">
-    <summary>D1 transits</summary>
-    <p id="transitZone"></p>
-    <button id="openTransitMap" type="button">Pin transit location</button>
-    <p id="transitLocation"></p>
-    <form id="transitForm">
-      <div class="transit-fields">
-        <label>Transit date (DD/MM/YYYY)<input id="transitDate" placeholder="DD/MM/YYYY" inputmode="numeric" required></label>
-        <label>Bangkok time (24-hour)<input id="transitTime" placeholder="18:30" inputmode="numeric" required></label>
-        <button type="submit">Calculate transits</button>
-        <button id="transitUseNow" type="button">Use now</button>
-      </div>
-    </form>
-    <label class="wheel-lagna-option"><input id="showTransit" type="checkbox" disabled> Show transits on D1</label>
-    <p id="transitStatus" role="status"></p>
-    <details id="transitPositions" hidden>
-      <summary>Exact transit positions</summary>
-      <div class="transit-table">
-        <table>
-          <thead><tr><th>Body</th><th>Sidereal position</th><th>Natal house</th></tr></thead>
-          <tbody id="transitPositionsBody"></tbody>
-        </table>
-      </div>
+  <div class="d1-controls">
+    <details class="card" id="d1TransitPanel">
+      <summary>D1 transits</summary>
+      <p id="transitZone"></p>
+      <button id="openTransitMap" type="button">Pin transit location</button>
+      <p id="transitLocation"></p>
+      <form id="transitForm">
+        <div class="transit-fields">
+          <label>Transit date (DD/MM/YYYY)<input id="transitDate" placeholder="DD/MM/YYYY" inputmode="numeric" required></label>
+          <label>Bangkok time (24-hour)<input id="transitTime" placeholder="18:30" inputmode="numeric" required></label>
+          <button type="submit">Calculate transits</button>
+          <button id="transitUseNow" type="button">Use now</button>
+        </div>
+      </form>
+      <label class="wheel-lagna-option"><input id="showTransit" type="checkbox" disabled> Show transits on D1</label>
+      <p id="transitStatus" role="status"></p>
+      <details id="transitPositions" hidden>
+        <summary>Exact transit positions</summary>
+        <div class="transit-table">
+          <table>
+            <thead><tr><th>Body</th><th>Sidereal position</th><th>Natal house</th></tr></thead>
+            <tbody id="transitPositionsBody"></tbody>
+          </table>
+        </div>
+      </details>
     </details>
-  </details>
+    <section id="specialLagnas" class="card" aria-labelledby="specialLagnasTitle" hidden>
+      <h2 id="specialLagnasTitle">Special Lagnas</h2>
+      <label class="wheel-lagna-option"><input id="showWheelSpecialLagnas" type="checkbox" disabled> Show HL and GL on round D1 wheels</label>
+      <p><a href="./calculation-methods.html#how-special-lagnas-work" style="color:var(--accent-blue)">How HL and GL are calculated</a></p>
+      <p id="specialLagnasPositions"></p>
+      <p id="specialLagnasSunrise"></p>
+    </section>
+  </div>
   <label class="wheel-lagna-option"><input id="showWheelDrishti" type="checkbox"> Show Jaimini Rasi Drishti on round wheels</label>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('tab-vargas', this)">1. Divisional Charts (All 20 D-Charts)</button>
