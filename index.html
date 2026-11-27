@@ -491,7 +491,7 @@
     <div class="field-group">
       <label for="inDate">Date of Birth (DD/MM/YYYY)</label>
       <div class="birth-date-controls">
-        <input id="inDate" type="text" placeholder="31/12/1990" maxlength="10" autocomplete="bday" required />
+        <input id="inDate" type="text" placeholder="31/12/1990" maxlength="10" inputmode="numeric" autocomplete="bday" required />
         <button id="openBirthDateCalendar" type="button" aria-label="Open date of birth calendar">Calendar</button>
         <input id="birthDateCalendar" class="calendar-anchor" type="date" min="0001-01-01" max="9999-12-31"
           aria-label="Date of birth calendar" aria-hidden="true" tabindex="-1" />
@@ -2583,6 +2583,17 @@
 
   birthDateCalendar.addEventListener("change", () => {
     if (birthDateCalendar.value) birthDateInput.value = displayBirthDate(birthDateCalendar.value);
+  });
+
+  birthDateInput.addEventListener("input", event => {
+    const input = event.currentTarget;
+    if (event.inputType?.startsWith("delete") || event.isComposing || input.selectionEnd !== input.value.length) return;
+
+    if (!/^\d{2}\/{0,2}(?:\d?|\d{2}\/{0,2}\d{0,4})$/.test(input.value)) return;
+    const digits = input.value.replaceAll("/", "");
+    const formatted = digits.slice(0, 2) + "/" + digits.slice(2, 4)
+      + (digits.length >= 4 ? "/" + digits.slice(4) : "");
+    if (formatted !== input.value) input.value = formatted;
   });
 
   function formatTimeField(event) {
